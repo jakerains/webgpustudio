@@ -12,7 +12,7 @@ No servers. No API keys. No data leaves your device.
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-[Live Demo](https://webgpustudio.vercel.app) &nbsp;&middot;&nbsp; [Report Bug](https://github.com/jakerains/webgpustudio/issues) &nbsp;&middot;&nbsp; [Request Feature](https://github.com/jakerains/webgpustudio/issues)
+[Live Demo](https://webgpu.studio) &nbsp;&middot;&nbsp; [Report Bug](https://github.com/jakerains/webgpustudio/issues) &nbsp;&middot;&nbsp; [Request Feature](https://github.com/jakerains/webgpustudio/issues)
 
 </div>
 

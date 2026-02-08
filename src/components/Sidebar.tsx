@@ -110,7 +110,7 @@ export function Sidebar() {
           className="text-base font-bold tracking-tight"
           style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
         >
-          WebGPU Studio
+          WebGPU.Studio
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -157,7 +157,7 @@ export function Sidebar() {
             style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
             onClick={() => setIsOpen(false)}
           >
-            WebGPU Studio
+            WebGPU.Studio
           </Link>
           <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-light)" }}>
             In-Browser AI Playground

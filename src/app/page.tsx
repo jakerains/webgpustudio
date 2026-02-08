@@ -19,6 +19,7 @@ import {
   Zap,
   Sparkles,
   ArrowRight,
+  Github,
 } from "lucide-react";
 import Link from "next/link";
 import { useWebGPUSupport } from "@/hooks/useWebGPUSupport";
@@ -51,7 +52,7 @@ export default function LandingPage() {
             className="text-4xl sm:text-5xl font-bold tracking-tight mb-2"
             style={{ fontFamily: "var(--font-geist-pixel-square)", color: "var(--foreground)" }}
           >
-            Web<span className="font-extrabold" style={{ color: "var(--accent)" }}>GPU</span> Studio
+            Web<span className="font-extrabold" style={{ color: "var(--accent)" }}>GPU</span>.Studio
           </h1>
           <p className="text-base mb-4" style={{ color: "var(--muted)" }}>
             AI models running entirely in your browser, powered by WebGPU
@@ -349,26 +350,58 @@ export default function LandingPage() {
         </CategorySection>
 
         {/* Footer */}
-        <footer className="mt-8 flex flex-col items-center gap-2">
+        <footer className="mt-8 flex flex-col items-center gap-4">
           <p className="text-xs" style={{ color: "var(--muted-light)" }}>
             All processing happens locally in your browser — no data leaves your device
           </p>
-          <button
-            onClick={() => setShowChangelog(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all hover:scale-105 active:scale-95 cursor-pointer"
+
+          {/* GitHub + Version row */}
+          <div className="flex items-center gap-3">
+            <a
+              href="https://github.com/jakerains/webgpustudio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: "var(--surface)",
+                color: "var(--muted)",
+                border: "1px solid var(--border-subtle)",
+              }}
+            >
+              <Github className="w-3.5 h-3.5" />
+              GitHub
+            </a>
+            <button
+              onClick={() => setShowChangelog(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              style={{
+                fontFamily: "var(--font-mono)",
+                background: "var(--surface)",
+                color: "var(--muted)",
+                border: "1px solid var(--border-subtle)",
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ background: "var(--success)" }}
+              />
+              v{APP_VERSION}
+            </button>
+          </div>
+
+          {/* Attribution */}
+          <a
+            href="https://jakerains.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] font-medium transition-opacity hover:opacity-70"
             style={{
-              fontFamily: "var(--font-mono)",
-              background: "var(--surface)",
-              color: "var(--muted)",
-              border: "1px solid var(--border-subtle)",
+              fontFamily: "var(--font-geist-pixel-square)",
+              color: "var(--foreground)",
             }}
           >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "var(--success)" }}
-            />
-            v{APP_VERSION}
-          </button>
+            a <span className="text-[13px]" style={{ color: "var(--accent)" }}>JAKE RAINS</span> project
+          </a>
         </footer>
 
         <ChangelogModal

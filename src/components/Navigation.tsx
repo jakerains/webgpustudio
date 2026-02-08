@@ -47,7 +47,7 @@ export function Navigation() {
               color: "var(--foreground)",
             }}
           >
-            WebGPU Studio
+            WebGPU.Studio
           </span>
 
           <div className="flex items-center gap-1">

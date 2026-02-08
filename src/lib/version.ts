@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.6.1";
+export const APP_VERSION = "0.7.0";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.7.0",
+    date: "2026-02-08",
+    title: "WebGPU.Studio Rebrand",
+    changes: [
+      { type: "changed", text: "Rebranded to WebGPU.Studio across hero, sidebar, metadata, and navigation" },
+      { type: "added", text: "Custom GPU favicon matching the hero icon (replaces default Next.js favicon)" },
+      { type: "added", text: "Footer with GitHub link, version badge, and Jake Rains attribution" },
+      { type: "changed", text: "Updated domain to webgpu.studio in all metadata and README links" },
+    ],
+  },
   {
     version: "0.6.1",
     date: "2026-02-08",

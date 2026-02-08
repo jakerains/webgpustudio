@@ -206,7 +206,7 @@ export function ChangelogModal({ isOpen, onClose }: ChangelogModalProps) {
                 Changelog
               </h2>
               <p className="text-[10px]" style={{ color: "var(--muted)" }}>
-                WebGPU Studio v{APP_VERSION}
+                WebGPU.Studio v{APP_VERSION}
               </p>
             </div>
           </div>
