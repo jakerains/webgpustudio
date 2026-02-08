@@ -72,6 +72,28 @@ All pages are `"use client"`. Standard layout: `max-w-2xl mx-auto px-5 py-10 sm:
    - **Minor** (0.5.0 → 0.6.0): new features, new routes/pages, significant new functionality, major redesigns
 3. Add a new entry to the top of the `CHANGELOG` array in `src/lib/version.ts` with today's date, a short title, and the list of changes with their types (`added`, `improved`, `fixed`, `changed`)
 
+## Feature Status Tracker
+
+Each WebGPU experiment's current tested status. Update this list as features are fixed or tested.
+
+| Route | Feature | Status | Notes |
+|---|---|---|---|
+| `/chat` | WebGPU Chat (LLMs) | ✅ Working | |
+| `/speech-to-text` | Whisper Speech-to-Text | ✅ Working | |
+| `/background-removal` | RMBG Background Removal | ✅ Working | |
+| `/object-detection` | YOLOS/DETR Object Detection | ✅ Working | |
+| `/music-generation` | MusicGen Text-to-Music | ❌ Broken | |
+| `/image-segmentation` | Segment Anything (SAM) | ⚠️ Partial | Sort of works, needs fixes |
+| `/semantic-search` | MiniLM Semantic Search | ⚠️ Partial | Needs work |
+| `/particle-simulator` | WebGPU Particle Simulator | ⚠️ Partial | Works but needs polish |
+| `/depth-estimation` | Depth Anything V2 | 🔘 Untested | |
+| `/text-to-speech` | SpeechT5 TTS | 🔘 Untested | |
+| `/lfm-audio` | LFM Audio Studio | 🔘 Untested | |
+| `/vision-chat` | SmolVLM Vision Chat | 🔘 Untested | |
+| `/translation` | NLLB-200 Translation | 🔘 Untested | |
+
+**Legend:** ✅ Working — ⚠️ Partial (needs fixes) — ❌ Broken — 🔘 Untested
+
 ## Model Names
 
 **Never change model names during debugging.** Model IDs (e.g., `onnx-community/sam3-tracker-ONNX`, `LiquidAI/LFM2.5-1.2B-Instruct-ONNX`) are valid HuggingFace Hub identifiers even if unrecognized. Assume model names are correct and never the source of bugs.

@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.7.0";
+export const APP_VERSION = "0.7.1";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.7.1",
+    date: "2026-02-08",
+    title: "Mobile Notice & Slider Fix",
+    changes: [
+      { type: "added", text: "Mobile visitors see a friendly 'Best on Desktop' notice instead of the feature grid" },
+      { type: "fixed", text: "Comparison slider no longer resizes the original image when dragging" },
+      { type: "added", text: "Feature status tracker in CLAUDE.md for tracking experiment health" },
+    ],
+  },
   {
     version: "0.7.0",
     date: "2026-02-08",

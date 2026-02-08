@@ -69,14 +69,13 @@ export function ResultView({ originalSrc, resultSrc, onDownload }: ResultViewPro
 
         {/* Original — clipped by slider position */}
         <div
-          className="absolute inset-0 overflow-hidden"
-          style={{ width: `${sliderPos}%` }}
+          className="absolute inset-0"
+          style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
         >
           <img
             src={originalSrc}
             alt="Original"
             className="block w-full h-auto"
-            style={{ width: containerRef.current ? `${containerRef.current.offsetWidth}px` : "100%" }}
             draggable={false}
           />
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Waves,
   MessageSquare,
@@ -20,6 +20,7 @@ import {
   Sparkles,
   ArrowRight,
   Github,
+  Monitor,
 } from "lucide-react";
 import Link from "next/link";
 import { useWebGPUSupport } from "@/hooks/useWebGPUSupport";
@@ -31,6 +32,15 @@ import { APP_VERSION } from "@/lib/version";
 export default function LandingPage() {
   const { isSupported, isChecking } = useWebGPUSupport();
   const [showChangelog, setShowChangelog] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   return (
     <main className="min-h-screen">
@@ -74,8 +84,43 @@ export default function LandingPage() {
           )}
         </div>
 
+        {/* Mobile notice */}
+        {isMobile && (
+          <div
+            className="rounded-2xl p-8 text-center mb-10 animate-fade-in-up"
+            style={{
+              background: "linear-gradient(145deg, rgba(251, 240, 233, 0.8), rgba(254, 251, 246, 0.95))",
+              border: "1px solid var(--accent-border)",
+              boxShadow: "0 4px 24px rgba(194, 114, 78, 0.1)",
+            }}
+          >
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{
+                background: "var(--accent-bg)",
+                border: "1px solid var(--accent-border)",
+              }}
+            >
+              <Monitor className="w-7 h-7" style={{ color: "var(--accent)" }} />
+            </div>
+            <h2
+              className="text-lg font-bold mb-2"
+              style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
+            >
+              Best on Desktop
+            </h2>
+            <p className="text-sm leading-relaxed mb-1" style={{ color: "var(--muted)" }}>
+              WebGPU Studio runs ML models directly in your browser using your GPU.
+              For the best experience, visit us on a desktop or laptop with a modern browser.
+            </p>
+            <p className="text-xs" style={{ color: "var(--muted-light)" }}>
+              Most experiments require significant GPU memory and processing power.
+            </p>
+          </div>
+        )}
+
         {/* Featured Section */}
-        <section className="mb-12 -mx-5 px-5 relative">
+        {!isMobile && <section className="mb-12 -mx-5 px-5 relative">
           {/* Background glow */}
           <div
             className="absolute inset-0 -top-8 -bottom-8 rounded-3xl animate-featured-glow"
@@ -232,8 +277,9 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-        </section>
+        </section>}
 
+        {!isMobile && <>
         {/* All Features by Category */}
         <CategorySection title="Speech & Audio" icon={Waves}>
           <FeatureCard
@@ -348,6 +394,7 @@ export default function LandingPage() {
             isNew
           />
         </CategorySection>
+        </>}
 
         {/* Footer */}
         <footer className="mt-8 flex flex-col items-center gap-4">

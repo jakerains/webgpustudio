@@ -74,14 +74,13 @@ export function ComparisonSlider({
 
       {/* Before image (clipped) */}
       <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ width: `${position}%` }}
+        className="absolute inset-0"
+        style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
       >
         <img
           src={beforeSrc}
           alt={beforeLabel}
-          className="w-full h-full object-cover"
-          style={{ minWidth: containerRef.current?.offsetWidth }}
+          className="w-full h-auto block"
         />
       </div>
 
