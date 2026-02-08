@@ -2,11 +2,19 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Waves, MessageSquare } from "lucide-react";
+import { Waves, MessageSquare, ImageMinus, Layers, Sparkles, Volume2, Music, Search, Scissors, Languages } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Speech to Text", icon: Waves },
   { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/text-to-speech", label: "TTS", icon: Volume2 },
+  { href: "/music-generation", label: "Music", icon: Music },
+  { href: "/background-removal", label: "BG Removal", icon: ImageMinus },
+  { href: "/depth-estimation", label: "Depth", icon: Layers },
+  { href: "/particle-simulator", label: "Particles", icon: Sparkles },
+  { href: "/semantic-search", label: "Search", icon: Search },
+  { href: "/image-segmentation", label: "Segment", icon: Scissors },
+  { href: "/translation", label: "Translate", icon: Languages },
 ];
 
 export function Navigation() {

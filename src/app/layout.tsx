@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
-import { Navigation } from "@/components/Navigation";
+import { Sidebar } from "@/components/Sidebar";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "WebGPU Studio — In-Browser AI",
   description:
-    "Speech-to-text and AI chat powered by WebGPU, running entirely in your browser.",
+    "Speech-to-text, chat, background removal, object detection, depth estimation, and more — all powered by WebGPU, running entirely in your browser.",
 };
 
 export default function RootLayout({
@@ -37,8 +37,11 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${bricolage.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
-        <Navigation />
-        {children}
+        <Sidebar />
+        {/* Main content area offset by sidebar width on desktop, top bar on mobile */}
+        <div className="lg:ml-[260px] pt-14 lg:pt-0">
+          {children}
+        </div>
       </body>
     </html>
   );
