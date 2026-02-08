@@ -24,11 +24,11 @@ export default function ParticleSimulatorPage() {
     [sim.handleResize]
   );
 
-  const handleGravityWell = useCallback(
+  const handlePointer = useCallback(
     (x: number, y: number, active: boolean) => {
-      sim.setGravityWell(x, y, active);
+      sim.setPointer(x, y, active);
     },
-    [sim.setGravityWell]
+    [sim.setPointer]
   );
 
   const handleParticleCountChange = useCallback(
@@ -147,10 +147,10 @@ export default function ParticleSimulatorPage() {
           className="text-base font-bold"
           style={{ color: "var(--foreground)", fontFamily: "var(--font-display)" }}
         >
-          Particle Simulator
+          Ink Flow Playground
         </h1>
         <p className="text-xs" style={{ color: "var(--muted)" }}>
-          WebGPU Compute Shaders
+          WebGPU Flow Field Particles
         </p>
       </div>
 
@@ -158,21 +158,21 @@ export default function ParticleSimulatorPage() {
       <ParticleCanvas
         onInit={handleInit}
         onResize={handleResize}
-        onGravityWell={handleGravityWell}
+        onPointer={handlePointer}
       />
 
       {/* Controls */}
       {sim.isInitialized && (
         <SimulationControls
           particleCount={sim.particleCount}
-          gravity={sim.gravity}
-          friction={sim.friction}
-          colorMode={sim.colorMode}
+          presetId={sim.presetId}
+          trailFade={sim.trailFade}
+          pointerMode={sim.pointerMode}
           fps={sim.fps}
           onParticleCountChange={handleParticleCountChange}
-          onGravityChange={sim.setGravity}
-          onFrictionChange={sim.setFriction}
-          onColorModeChange={sim.setColorMode}
+          onPresetChange={sim.setPreset}
+          onTrailFadeChange={sim.setTrailFade}
+          onPointerModeChange={sim.setPointerMode}
           onReset={handleReset}
         />
       )}

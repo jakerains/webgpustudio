@@ -1,37 +1,35 @@
 "use client";
 
-import { ColorMode } from "@/lib/particle-engine";
+import { PointerMode } from "@/lib/particle-engine";
+import { PARTICLE_PRESETS } from "@/lib/particle-presets";
 
 interface SimulationControlsProps {
   particleCount: number;
-  gravity: number;
-  friction: number;
-  colorMode: ColorMode;
+  presetId: string;
+  trailFade: number;
+  pointerMode: PointerMode;
   fps: number;
   onParticleCountChange: (count: number) => void;
-  onGravityChange: (gravity: number) => void;
-  onFrictionChange: (friction: number) => void;
-  onColorModeChange: (mode: ColorMode) => void;
+  onPresetChange: (presetId: string) => void;
+  onTrailFadeChange: (trailFade: number) => void;
+  onPointerModeChange: (mode: PointerMode) => void;
   onReset: () => void;
 }
 
-const PARTICLE_PRESETS = [1000, 5000, 10000, 50000];
-const COLOR_MODES: { value: ColorMode; label: string }[] = [
-  { value: "rainbow", label: "Rainbow" },
-  { value: "temperature", label: "Thermal" },
-  { value: "monochrome", label: "Ember" },
-];
+const PARTICLE_COUNTS = [1000, 5000, 10000, 50000];
+const TRAIL_MIN = 0.02;
+const TRAIL_MAX = 0.18;
 
 export function SimulationControls({
   particleCount,
-  gravity,
-  friction,
-  colorMode,
+  presetId,
+  trailFade,
+  pointerMode,
   fps,
   onParticleCountChange,
-  onGravityChange,
-  onFrictionChange,
-  onColorModeChange,
+  onPresetChange,
+  onTrailFadeChange,
+  onPointerModeChange,
   onReset,
 }: SimulationControlsProps) {
   return (
@@ -65,13 +63,36 @@ export function SimulationControls({
         </span>
       </div>
 
+      {/* Presets */}
+      <div>
+        <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--muted)" }}>
+          Preset
+        </label>
+        <div className="grid grid-cols-3 gap-1">
+          {PARTICLE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              onClick={() => onPresetChange(preset.id)}
+              className="text-xs py-1.5 rounded-lg font-medium transition-all"
+              style={{
+                background: presetId === preset.id ? "var(--accent)" : "var(--surface)",
+                color: presetId === preset.id ? "#FFFFFF" : "var(--foreground)",
+                border: `1px solid ${presetId === preset.id ? "var(--accent)" : "var(--border-subtle)"}`,
+              }}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Particle Count */}
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--muted)" }}>
           Particles
         </label>
         <div className="grid grid-cols-4 gap-1">
-          {PARTICLE_PRESETS.map((count) => (
+          {PARTICLE_COUNTS.map((count) => (
             <button
               key={count}
               onClick={() => onParticleCountChange(count)}
@@ -88,74 +109,49 @@ export function SimulationControls({
         </div>
       </div>
 
-      {/* Gravity Slider */}
+      {/* Trail Fade */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-medium" style={{ color: "var(--muted)" }}>
-            Gravity
+            Trail
           </label>
           <span className="text-xs font-mono" style={{ color: "var(--foreground)" }}>
-            {gravity.toFixed(1)}
+            {trailFade.toFixed(2)}
           </span>
         </div>
         <input
           type="range"
-          min="0.1"
-          max="5.0"
-          step="0.1"
-          value={gravity}
-          onChange={(e) => onGravityChange(parseFloat(e.target.value))}
+          min={TRAIL_MIN}
+          max={TRAIL_MAX}
+          step={0.01}
+          value={trailFade}
+          onChange={(e) => onTrailFadeChange(parseFloat(e.target.value))}
           className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
           style={{
-            background: `linear-gradient(to right, var(--accent) 0%, var(--accent) ${((gravity - 0.1) / 4.9) * 100}%, var(--border-subtle) ${((gravity - 0.1) / 4.9) * 100}%, var(--border-subtle) 100%)`,
+            background: `linear-gradient(to right, var(--accent) 0%, var(--accent) ${((trailFade - TRAIL_MIN) / (TRAIL_MAX - TRAIL_MIN)) * 100}%, var(--border-subtle) ${((trailFade - TRAIL_MIN) / (TRAIL_MAX - TRAIL_MIN)) * 100}%, var(--border-subtle) 100%)`,
             accentColor: "var(--accent)",
           }}
         />
       </div>
 
-      {/* Friction Slider */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-medium" style={{ color: "var(--muted)" }}>
-            Friction
-          </label>
-          <span className="text-xs font-mono" style={{ color: "var(--foreground)" }}>
-            {friction.toFixed(3)}
-          </span>
-        </div>
-        <input
-          type="range"
-          min="0.950"
-          max="1.000"
-          step="0.001"
-          value={friction}
-          onChange={(e) => onFrictionChange(parseFloat(e.target.value))}
-          className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-          style={{
-            background: `linear-gradient(to right, var(--accent) 0%, var(--accent) ${((friction - 0.95) / 0.05) * 100}%, var(--border-subtle) ${((friction - 0.95) / 0.05) * 100}%, var(--border-subtle) 100%)`,
-            accentColor: "var(--accent)",
-          }}
-        />
-      </div>
-
-      {/* Color Mode */}
+      {/* Pointer Mode */}
       <div>
         <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--muted)" }}>
-          Color Mode
+          Pointer
         </label>
-        <div className="grid grid-cols-3 gap-1">
-          {COLOR_MODES.map(({ value, label }) => (
+        <div className="grid grid-cols-2 gap-1">
+          {(["attract", "repel"] as PointerMode[]).map((mode) => (
             <button
-              key={value}
-              onClick={() => onColorModeChange(value)}
+              key={mode}
+              onClick={() => onPointerModeChange(mode)}
               className="text-xs py-1.5 rounded-lg font-medium transition-all"
               style={{
-                background: colorMode === value ? "var(--accent)" : "var(--surface)",
-                color: colorMode === value ? "#FFFFFF" : "var(--foreground)",
-                border: `1px solid ${colorMode === value ? "var(--accent)" : "var(--border-subtle)"}`,
+                background: pointerMode === mode ? "var(--accent)" : "var(--surface)",
+                color: pointerMode === mode ? "#FFFFFF" : "var(--foreground)",
+                border: `1px solid ${pointerMode === mode ? "var(--accent)" : "var(--border-subtle)"}`,
               }}
             >
-              {label}
+              {mode === "attract" ? "Attract" : "Repel"}
             </button>
           ))}
         </div>
@@ -182,7 +178,7 @@ export function SimulationControls({
 
       {/* Hint */}
       <p className="text-xs text-center" style={{ color: "var(--muted-light)" }}>
-        Click & hold to attract particles
+        Move or drag to pull or push the ink
       </p>
     </div>
   );

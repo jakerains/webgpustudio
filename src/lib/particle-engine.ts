@@ -1,19 +1,40 @@
-import { computeShader, vertexShader, fragmentShader } from "./particle-shaders";
+import {
+  computeShader,
+  vertexShader,
+  fragmentShader,
+  trailVertexShader,
+  trailFragmentShader,
+  presentFragmentShader,
+} from "./particle-shaders";
+import { ParticlePalette, ParticlePresetParams } from "./particle-presets";
 
 // Stride: pos(2) + vel(2) + color(4) = 8 floats per particle
 const PARTICLE_STRIDE = 8;
 const FLOATS_PER_F32 = 4; // bytes
 
-export type ColorMode = "rainbow" | "temperature" | "monochrome";
+export type PointerMode = "attract" | "repel";
 
-const COLOR_MODE_MAP: Record<ColorMode, number> = {
-  rainbow: 0,
-  temperature: 1,
-  monochrome: 2,
+export interface ParticleParams extends ParticlePresetParams {
+  pointerMode: PointerMode;
+}
+
+const PALETTE_MAP: Record<ParticlePalette, number> = {
+  ink: 0,
+  sand: 1,
+  ember: 2,
 };
 
-// Uniform layout: deltaTime, gravity, friction, numParticles, mouseX, mouseY, mouseActive, boundaryX, boundaryY, colorMode, time, _pad
-const UNIFORM_SIZE = 12 * FLOATS_PER_F32; // 12 floats, 48 bytes
+const POINTER_MODE_MAP: Record<PointerMode, number> = {
+  attract: 1,
+  repel: -1,
+};
+
+// Uniform layout: deltaTime, friction, numParticles, mouseX, mouseY, mouseActive, boundaryX, boundaryY, time,
+// flowStrength, flowScale, swirlStrength, pointerStrength, pointerRadius, pointerMode, speedLimit, trailFade, palette, sizeBase, _pad
+const UNIFORM_FLOATS = 20;
+const UNIFORM_SIZE = UNIFORM_FLOATS * FLOATS_PER_F32; // 20 floats, 80 bytes
+const RENDER_PARAMS_SIZE = 4 * FLOATS_PER_F32; // width, height, sizeBase, speedLimit
+const TRAIL_PARAMS_SIZE = 4 * FLOATS_PER_F32; // trailFade + padding
 
 export class ParticleEngine {
   private canvas: HTMLCanvasElement;
@@ -25,15 +46,25 @@ export class ParticleEngine {
   // Buffers
   private particleBuffers!: [GPUBuffer, GPUBuffer]; // ping-pong
   private uniformBuffer!: GPUBuffer;
-  private canvasSizeBuffer!: GPUBuffer;
+  private renderParamsBuffer!: GPUBuffer;
+  private trailParamsBuffer!: GPUBuffer;
 
   // Pipelines
   private computePipeline!: GPUComputePipeline;
   private renderPipeline!: GPURenderPipeline;
+  private trailPipeline!: GPURenderPipeline;
+  private presentPipeline!: GPURenderPipeline;
 
   // Bind groups
   private computeBindGroups!: [GPUBindGroup, GPUBindGroup]; // ping-pong
   private renderBindGroups!: [GPUBindGroup, GPUBindGroup]; // ping-pong
+  private trailBindGroup!: GPUBindGroup;
+  private presentBindGroup!: GPUBindGroup;
+
+  // Trail resources
+  private trailTexture!: GPUTexture;
+  private trailTextureView!: GPUTextureView;
+  private trailSampler!: GPUSampler;
 
   private step_: number = 0; // tracks which ping-pong buffer is current
   private lastTime: number = 0;
@@ -43,9 +74,17 @@ export class ParticleEngine {
   private simTime: number = 0;
 
   // Simulation parameters
-  private gravity: number = 1.0;
-  private friction: number = 0.985;
-  private colorMode: ColorMode = "rainbow";
+  private friction: number = 0.987;
+  private flowStrength: number = 26;
+  private flowScale: number = 0.0026;
+  private swirlStrength: number = 20;
+  private pointerStrength: number = 180;
+  private pointerRadius: number = 140;
+  private pointerMode: PointerMode = "attract";
+  private speedLimit: number = 420;
+  private trailFade: number = 0.1;
+  private sizeBase: number = 2.4;
+  private palette: ParticlePalette = "ink";
   private mouseX: number = 0;
   private mouseY: number = 0;
   private mouseActive: boolean = false;
@@ -78,13 +117,14 @@ export class ParticleEngine {
     this.createBuffers();
     this.createPipelines();
     this.createBindGroups();
+    this.createHistoryTextures();
     this.initParticles();
 
     this.lastTime = performance.now();
     this.fpsTime = performance.now();
   }
 
-  private createBuffers(): void {
+  private createParticleBuffers(): void {
     const bufferSize = this.particleCount * PARTICLE_STRIDE * FLOATS_PER_F32;
 
     this.particleBuffers = [
@@ -97,14 +137,23 @@ export class ParticleEngine {
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       }),
     ];
+  }
+
+  private createBuffers(): void {
+    this.createParticleBuffers();
 
     this.uniformBuffer = this.device.createBuffer({
       size: UNIFORM_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.canvasSizeBuffer = this.device.createBuffer({
-      size: 2 * FLOATS_PER_F32, // width, height
+    this.renderParamsBuffer = this.device.createBuffer({
+      size: RENDER_PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.trailParamsBuffer = this.device.createBuffer({
+      size: TRAIL_PARAMS_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
   }
@@ -177,6 +226,82 @@ export class ParticleEngine {
         topology: "triangle-list",
       },
     });
+
+    this.trailSampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge",
+    });
+
+    const trailVertexModule = this.device.createShaderModule({ code: trailVertexShader });
+    const trailFragmentModule = this.device.createShaderModule({ code: trailFragmentShader });
+    const presentFragmentModule = this.device.createShaderModule({ code: presentFragmentShader });
+
+    const trailBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+      ],
+    });
+
+    const presentBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+      ],
+    });
+
+    this.trailPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [trailBindGroupLayout],
+      }),
+      vertex: {
+        module: trailVertexModule,
+        entryPoint: "main",
+      },
+      fragment: {
+        module: trailFragmentModule,
+        entryPoint: "main",
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add",
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add",
+              },
+            },
+          },
+        ],
+      },
+      primitive: {
+        topology: "triangle-list",
+      },
+    });
+
+    this.presentPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [presentBindGroupLayout],
+      }),
+      vertex: {
+        module: trailVertexModule,
+        entryPoint: "main",
+      },
+      fragment: {
+        module: presentFragmentModule,
+        entryPoint: "main",
+        targets: [{ format: this.format }],
+      },
+      primitive: {
+        topology: "triangle-list",
+      },
+    });
   }
 
   private createBindGroups(): void {
@@ -209,17 +334,73 @@ export class ParticleEngine {
         layout: renderLayout,
         entries: [
           { binding: 0, resource: { buffer: this.particleBuffers[1] } },
-          { binding: 1, resource: { buffer: this.canvasSizeBuffer } },
+          { binding: 1, resource: { buffer: this.renderParamsBuffer } },
         ],
       }),
       this.device.createBindGroup({
         layout: renderLayout,
         entries: [
           { binding: 0, resource: { buffer: this.particleBuffers[0] } },
-          { binding: 1, resource: { buffer: this.canvasSizeBuffer } },
+          { binding: 1, resource: { buffer: this.renderParamsBuffer } },
         ],
       }),
     ];
+  }
+
+  private createHistoryTextures(): void {
+    this.trailTexture?.destroy();
+
+    const width = Math.max(1, this.canvas.width);
+    const height = Math.max(1, this.canvas.height);
+
+    this.trailTexture = this.device.createTexture({
+      size: { width, height },
+      format: this.format,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.trailTextureView = this.trailTexture.createView();
+
+    this.createTrailBindGroup();
+    this.createPresentBindGroup();
+    this.clearTrailTextures();
+  }
+
+  private createTrailBindGroup(): void {
+    const trailLayout = this.trailPipeline.getBindGroupLayout(0);
+    this.trailBindGroup = this.device.createBindGroup({
+      layout: trailLayout,
+      entries: [{ binding: 0, resource: { buffer: this.trailParamsBuffer } }],
+    });
+  }
+
+  private createPresentBindGroup(): void {
+    const presentLayout = this.presentPipeline.getBindGroupLayout(0);
+    this.presentBindGroup = this.device.createBindGroup({
+      layout: presentLayout,
+      entries: [
+        { binding: 0, resource: this.trailSampler },
+        { binding: 1, resource: this.trailTextureView },
+      ],
+    });
+  }
+
+  private clearTrailTextures(): void {
+    const encoder = this.device.createCommandEncoder();
+    const clearValue = { r: 0.07, g: 0.05, b: 0.03, a: 1.0 };
+
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: this.trailTextureView,
+          clearValue,
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+    });
+    pass.end();
+
+    this.device.queue.submit([encoder.finish()]);
   }
 
   private initParticles(): void {
@@ -247,16 +428,24 @@ export class ParticleEngine {
     this.device.queue.writeBuffer(this.particleBuffers[1], 0, data);
   }
 
-  setGravityWell(x: number, y: number, active: boolean): void {
+  setPointer(x: number, y: number, active: boolean): void {
     this.mouseX = x;
     this.mouseY = y;
     this.mouseActive = active;
   }
 
-  setParams(gravity: number, friction: number, colorMode: ColorMode): void {
-    this.gravity = gravity;
-    this.friction = friction;
-    this.colorMode = colorMode;
+  setParams(params: Partial<ParticleParams>): void {
+    if (params.friction !== undefined) this.friction = params.friction;
+    if (params.flowStrength !== undefined) this.flowStrength = params.flowStrength;
+    if (params.flowScale !== undefined) this.flowScale = params.flowScale;
+    if (params.swirlStrength !== undefined) this.swirlStrength = params.swirlStrength;
+    if (params.pointerStrength !== undefined) this.pointerStrength = params.pointerStrength;
+    if (params.pointerRadius !== undefined) this.pointerRadius = params.pointerRadius;
+    if (params.pointerMode !== undefined) this.pointerMode = params.pointerMode;
+    if (params.speedLimit !== undefined) this.speedLimit = params.speedLimit;
+    if (params.trailFade !== undefined) this.trailFade = params.trailFade;
+    if (params.sizeBase !== undefined) this.sizeBase = params.sizeBase;
+    if (params.palette !== undefined) this.palette = params.palette;
   }
 
   resize(width: number, height: number): void {
@@ -268,6 +457,8 @@ export class ParticleEngine {
       format: this.format,
       alphaMode: "premultiplied",
     });
+
+    this.createHistoryTextures();
   }
 
   step(): void {
@@ -285,26 +476,42 @@ export class ParticleEngine {
     }
 
     // Update uniforms
-    const uniforms = new Float32Array(12);
+    const uniforms = new Float32Array(UNIFORM_FLOATS);
     uniforms[0] = deltaTime;
-    uniforms[1] = this.gravity;
-    uniforms[2] = this.friction;
+    uniforms[1] = this.friction;
     // numParticles as uint32 reinterpreted
-    new Uint32Array(uniforms.buffer, 12, 1)[0] = this.particleCount;
-    uniforms[4] = this.mouseX;
-    uniforms[5] = this.mouseY;
-    uniforms[6] = this.mouseActive ? 1.0 : 0.0;
-    uniforms[7] = this.canvas.width;
-    uniforms[8] = this.canvas.height;
-    new Uint32Array(uniforms.buffer, 36, 1)[0] = COLOR_MODE_MAP[this.colorMode];
-    uniforms[10] = this.simTime;
-    uniforms[11] = 0; // padding
+    new Uint32Array(uniforms.buffer, 8, 1)[0] = this.particleCount;
+    uniforms[3] = this.mouseX;
+    uniforms[4] = this.mouseY;
+    uniforms[5] = this.mouseActive ? 1.0 : 0.0;
+    uniforms[6] = this.canvas.width;
+    uniforms[7] = this.canvas.height;
+    uniforms[8] = this.simTime;
+    uniforms[9] = this.flowStrength;
+    uniforms[10] = this.flowScale;
+    uniforms[11] = this.swirlStrength;
+    uniforms[12] = this.pointerStrength;
+    uniforms[13] = this.pointerRadius;
+    uniforms[14] = POINTER_MODE_MAP[this.pointerMode];
+    uniforms[15] = this.speedLimit;
+    uniforms[16] = this.trailFade;
+    new Uint32Array(uniforms.buffer, 68, 1)[0] = PALETTE_MAP[this.palette];
+    uniforms[18] = this.sizeBase;
+    uniforms[19] = 0; // padding
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, uniforms);
 
-    // Update canvas size uniform
-    const canvasSize = new Float32Array([this.canvas.width, this.canvas.height]);
-    this.device.queue.writeBuffer(this.canvasSizeBuffer, 0, canvasSize);
+    // Update render params uniform
+    const renderParams = new Float32Array([
+      this.canvas.width,
+      this.canvas.height,
+      this.sizeBase,
+      this.speedLimit,
+    ]);
+    this.device.queue.writeBuffer(this.renderParamsBuffer, 0, renderParams);
+
+    const trailParams = new Float32Array([this.trailFade, 0, 0, 0]);
+    this.device.queue.writeBuffer(this.trailParamsBuffer, 0, trailParams);
 
     const commandEncoder = this.device.createCommandEncoder();
 
@@ -315,23 +522,45 @@ export class ParticleEngine {
     computePass.dispatchWorkgroups(Math.ceil(this.particleCount / 64));
     computePass.end();
 
-    // Render pass
+    const clearValue = { r: 0.07, g: 0.05, b: 0.03, a: 1.0 };
+
+    // Trail fade + particle render pass to history texture
+    const historyPass = commandEncoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: this.trailTextureView,
+          clearValue,
+          loadOp: "load",
+          storeOp: "store",
+        },
+      ],
+    });
+    historyPass.setPipeline(this.trailPipeline);
+    historyPass.setBindGroup(0, this.trailBindGroup);
+    historyPass.draw(3, 1, 0, 0);
+
+    historyPass.setPipeline(this.renderPipeline);
+    historyPass.setBindGroup(0, this.renderBindGroups[this.step_]);
+    // 6 vertices per quad (2 triangles), instanced for each particle
+    historyPass.draw(6, this.particleCount, 0, 0);
+    historyPass.end();
+
+    // Present pass
     const textureView = this.context.getCurrentTexture().createView();
-    const renderPass = commandEncoder.beginRenderPass({
+    const presentPass = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
           view: textureView,
-          clearValue: { r: 0.07, g: 0.05, b: 0.03, a: 1.0 }, // dark warm background
+          clearValue,
           loadOp: "clear",
           storeOp: "store",
         },
       ],
     });
-    renderPass.setPipeline(this.renderPipeline);
-    renderPass.setBindGroup(0, this.renderBindGroups[this.step_]);
-    // 6 vertices per quad (2 triangles), instanced for each particle
-    renderPass.draw(6, this.particleCount, 0, 0);
-    renderPass.end();
+    presentPass.setPipeline(this.presentPipeline);
+    presentPass.setBindGroup(0, this.presentBindGroup);
+    presentPass.draw(3, 1, 0, 0);
+    presentPass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);
 
@@ -353,19 +582,22 @@ export class ParticleEngine {
       // Recreate buffers for new count
       this.particleBuffers[0].destroy();
       this.particleBuffers[1].destroy();
-      this.createBuffers();
+      this.createParticleBuffers();
       this.createBindGroups();
     }
     this.initParticles();
     this.step_ = 0;
     this.simTime = 0;
+    this.clearTrailTextures();
   }
 
   destroy(): void {
     this.particleBuffers[0]?.destroy();
     this.particleBuffers[1]?.destroy();
     this.uniformBuffer?.destroy();
-    this.canvasSizeBuffer?.destroy();
+    this.renderParamsBuffer?.destroy();
+    this.trailParamsBuffer?.destroy();
+    this.trailTexture?.destroy();
     this.device?.destroy();
   }
 }

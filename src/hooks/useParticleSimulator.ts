@@ -1,26 +1,28 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ParticleEngine, ColorMode } from "@/lib/particle-engine";
+import { ParticleEngine, PointerMode } from "@/lib/particle-engine";
+import { PARTICLE_PRESETS, getParticlePreset } from "@/lib/particle-presets";
 
 interface ParticleSimulatorState {
   isInitialized: boolean;
   fps: number;
   particleCount: number;
-  gravity: number;
-  friction: number;
-  colorMode: ColorMode;
+  presetId: string;
+  trailFade: number;
+  pointerMode: PointerMode;
   error: string | null;
 }
 
 export function useParticleSimulator() {
+  const defaultPreset = PARTICLE_PRESETS[0];
   const [state, setState] = useState<ParticleSimulatorState>({
     isInitialized: false,
     fps: 0,
     particleCount: 10000,
-    gravity: 1.0,
-    friction: 0.985,
-    colorMode: "rainbow",
+    presetId: defaultPreset?.id ?? "ink-drift",
+    trailFade: defaultPreset?.params.trailFade ?? 0.1,
+    pointerMode: "attract",
     error: null,
   });
 
@@ -50,7 +52,12 @@ export function useParticleSimulator() {
       try {
         const engine = new ParticleEngine(canvas, state.particleCount);
         await engine.init();
-        engine.setParams(state.gravity, state.friction, state.colorMode);
+        const preset = getParticlePreset(state.presetId);
+        engine.setParams({
+          ...preset.params,
+          trailFade: state.trailFade,
+          pointerMode: state.pointerMode,
+        });
 
         engineRef.current = engine;
         runningRef.current = true;
@@ -65,35 +72,32 @@ export function useParticleSimulator() {
         }));
       }
     },
-    [state.particleCount, state.gravity, state.friction, state.colorMode, animate]
+    [state.particleCount, state.presetId, state.trailFade, state.pointerMode, animate]
   );
 
-  const setGravityWell = useCallback((x: number, y: number, active: boolean) => {
-    engineRef.current?.setGravityWell(x, y, active);
+  const setPointer = useCallback((x: number, y: number, active: boolean) => {
+    engineRef.current?.setPointer(x, y, active);
   }, []);
 
-  const setGravity = useCallback((gravity: number) => {
-    setState((prev) => ({ ...prev, gravity }));
-    engineRef.current?.setParams(
-      gravity,
-      engineRef.current ? state.friction : 0.985,
-      engineRef.current ? state.colorMode : "rainbow"
-    );
-  }, [state.friction, state.colorMode]);
+  const setPreset = useCallback((presetId: string) => {
+    const preset = getParticlePreset(presetId);
+    setState((prev) => ({
+      ...prev,
+      presetId: preset.id,
+      trailFade: preset.params.trailFade,
+    }));
+    engineRef.current?.setParams(preset.params);
+  }, []);
 
-  const setFriction = useCallback((friction: number) => {
-    setState((prev) => ({ ...prev, friction }));
-    engineRef.current?.setParams(
-      state.gravity,
-      friction,
-      state.colorMode
-    );
-  }, [state.gravity, state.colorMode]);
+  const setTrailFade = useCallback((trailFade: number) => {
+    setState((prev) => ({ ...prev, trailFade }));
+    engineRef.current?.setParams({ trailFade });
+  }, []);
 
-  const setColorMode = useCallback((colorMode: ColorMode) => {
-    setState((prev) => ({ ...prev, colorMode }));
-    engineRef.current?.setParams(state.gravity, state.friction, colorMode);
-  }, [state.gravity, state.friction]);
+  const setPointerMode = useCallback((pointerMode: PointerMode) => {
+    setState((prev) => ({ ...prev, pointerMode }));
+    engineRef.current?.setParams({ pointerMode });
+  }, []);
 
   const resetParticles = useCallback(async (count?: number) => {
     if (!engineRef.current) return;
@@ -126,10 +130,10 @@ export function useParticleSimulator() {
     ...state,
     canvasRef,
     init,
-    setGravityWell,
-    setGravity,
-    setFriction,
-    setColorMode,
+    setPointer,
+    setPreset,
+    setTrailFade,
+    setPointerMode,
     resetParticles,
     handleResize,
   };

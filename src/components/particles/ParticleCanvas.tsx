@@ -5,50 +5,71 @@ import { useEffect, useRef, useCallback } from "react";
 interface ParticleCanvasProps {
   onInit: (canvas: HTMLCanvasElement) => void;
   onResize: (width: number, height: number) => void;
-  onGravityWell: (x: number, y: number, active: boolean) => void;
+  onPointer: (x: number, y: number, active: boolean) => void;
 }
 
-export function ParticleCanvas({ onInit, onResize, onGravityWell }: ParticleCanvasProps) {
+export function ParticleCanvas({ onInit, onResize, onPointer }: ParticleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
+
+  const getPointerPosition = useCallback(
+    (canvas: HTMLCanvasElement, e: React.PointerEvent<HTMLCanvasElement>) => {
+      const scaleX = canvas.width / canvas.clientWidth;
+      const scaleY = canvas.height / canvas.clientHeight;
+      return {
+        x: e.nativeEvent.offsetX * scaleX,
+        y: (canvas.clientHeight - e.nativeEvent.offsetY) * scaleY,
+      };
+    },
+    []
+  );
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      onGravityWell(
-        (e.clientX - rect.left) * scaleX,
-        (e.clientY - rect.top) * scaleY,
+      const { x, y } = getPointerPosition(canvas, e);
+      onPointer(
+        x,
+        y,
         true
       );
     },
-    [onGravityWell]
+    [getPointerPosition, onPointer]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (e.buttons === 0) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      onGravityWell(
-        (e.clientX - rect.left) * scaleX,
-        (e.clientY - rect.top) * scaleY,
+      const { x, y } = getPointerPosition(canvas, e);
+      onPointer(
+        x,
+        y,
         true
       );
     },
-    [onGravityWell]
+    [getPointerPosition, onPointer]
+  );
+
+  const handlePointerEnter = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const { x, y } = getPointerPosition(canvas, e);
+      onPointer(
+        x,
+        y,
+        true
+      );
+    },
+    [getPointerPosition, onPointer]
   );
 
   const handlePointerUp = useCallback(() => {
-    onGravityWell(0, 0, false);
-  }, [onGravityWell]);
+    onPointer(0, 0, false);
+  }, [onPointer]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -89,6 +110,7 @@ export function ParticleCanvas({ onInit, onResize, onGravityWell }: ParticleCanv
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerUp}
       />
     </div>
