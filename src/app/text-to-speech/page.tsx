@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Settings,
   Download,
@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Volume2,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -17,45 +18,9 @@ import { AudioPlayer } from "@/components/shared/AudioPlayer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWebGPUSupport } from "@/hooks/useWebGPUSupport";
 import { TTS_MODELS } from "@/lib/tts-constants";
+import { float32ToWav } from "@/lib/canvas-utils";
 
-function float32ToWav(audioData: Float32Array, sampleRate: number): Blob {
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-  const blockAlign = numChannels * (bitsPerSample / 8);
-  const dataSize = audioData.length * (bitsPerSample / 8);
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  // WAV header
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeString(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, "WAVE");
-  writeString(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-  writeString(36, "data");
-  view.setUint32(40, dataSize, true);
-
-  // Convert float32 to int16
-  for (let i = 0; i < audioData.length; i++) {
-    const sample = Math.max(-1, Math.min(1, audioData[i]));
-    view.setInt16(44 + i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-  }
-
-  return new Blob([buffer], { type: "audio/wav" });
-}
+const LFM_AUDIO_MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-ONNX";
 
 export default function TextToSpeechPage() {
   const { isSupported: isWebGPUSupported, isChecking: isCheckingWebGPU } =
@@ -66,12 +31,21 @@ export default function TextToSpeechPage() {
 
   const selectedModel =
     TTS_MODELS.find((m) => m.id === tts.modelId) ?? TTS_MODELS[0];
+  const isLfmSelected = selectedModel.id === LFM_AUDIO_MODEL_ID;
 
   const audioUrl = useMemo(() => {
     if (!tts.audioResult) return null;
     const wav = float32ToWav(tts.audioResult.audio, tts.audioResult.samplingRate);
     return URL.createObjectURL(wav);
   }, [tts.audioResult]);
+
+  useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
 
   const handleSynthesize = () => {
     if (text.trim()) {
@@ -165,15 +139,67 @@ export default function TextToSpeechPage() {
 
           {!tts.isModelReady && (
             <>
-              <div className="mb-4">
-                <VoiceSelector />
-              </div>
+              {isLfmSelected && (
+                <div
+                  className="mb-4 flex items-start gap-2 p-3 rounded-xl text-xs"
+                  style={{
+                    background: "var(--warning-bg)",
+                    border: "1px solid var(--warning-border)",
+                    color: "var(--warning)",
+                  }}
+                >
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    LFM2.5 Audio is a large model ({selectedModel.size}). Click
+                    load to start a one-time download to browser cache.
+                  </span>
+                </div>
+              )}
 
               <div className="mb-5">
-                <p className="text-xs" style={{ color: "var(--muted-light)" }}>
-                  {selectedModel.label} — {selectedModel.size} —{" "}
+                <label
+                  className="text-xs font-medium mb-2 block"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Model
+                </label>
+                <div className="relative">
+                  <select
+                    value={tts.modelId}
+                    onChange={(e) => tts.setModelId(e.target.value)}
+                    disabled={tts.isModelLoading}
+                    className={clsx(
+                      "w-full appearance-none px-4 py-2.5 pr-10 rounded-xl text-sm font-medium transition-all focus:outline-none",
+                      tts.isModelLoading && "opacity-40 cursor-not-allowed"
+                    )}
+                    style={{
+                      background: "var(--surface)",
+                      color: "var(--foreground)",
+                      border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    {TTS_MODELS.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.label} — {model.size}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                    style={{ color: "var(--muted-light)" }}
+                  />
+                </div>
+                <p className="text-xs mt-1.5" style={{ color: "var(--muted-light)" }}>
                   {selectedModel.description}
                 </p>
+              </div>
+
+              <div className="mb-4">
+                <VoiceSelector
+                  modelLabel={selectedModel.label}
+                  voiceProfile={selectedModel.voiceProfile}
+                  supportsInterleaved={selectedModel.supportsInterleaved}
+                />
               </div>
 
               <button
@@ -212,7 +238,7 @@ export default function TextToSpeechPage() {
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    Load SpeechT5 Model
+                    Load TTS Model
                   </>
                 )}
               </button>
@@ -240,30 +266,63 @@ export default function TextToSpeechPage() {
           )}
 
           {tts.isModelReady && (
-            <div
-              className="flex items-center gap-3 p-4 rounded-xl"
-              style={{
-                background: "var(--success-bg)",
-                border: "1px solid var(--success-border)",
-              }}
-            >
-              <CheckCircle2
-                className="w-5 h-5"
-                style={{ color: "var(--success)" }}
-              />
-              <div>
-                <p
-                  className="text-sm font-medium"
+            <div className="space-y-4">
+              <div
+                className="flex items-center gap-3 p-4 rounded-xl"
+                style={{
+                  background: "var(--success-bg)",
+                  border: "1px solid var(--success-border)",
+                }}
+              >
+                <CheckCircle2
+                  className="w-5 h-5"
                   style={{ color: "var(--success)" }}
+                />
+                <div>
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: "var(--success)" }}
+                  >
+                    Model Ready
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--success)", opacity: 0.7 }}
+                  >
+                    {selectedModel.label} loaded on WebGPU
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className="text-xs font-medium mb-2 block"
+                  style={{ color: "var(--muted)" }}
                 >
-                  Model Ready
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: "var(--success)", opacity: 0.7 }}
-                >
-                  {selectedModel.label} loaded on WebGPU
-                </p>
+                  Switch Model
+                </label>
+                <div className="relative">
+                  <select
+                    value={tts.modelId}
+                    onChange={(e) => tts.setModelId(e.target.value)}
+                    className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl text-sm font-medium transition-all focus:outline-none"
+                    style={{
+                      background: "var(--surface)",
+                      color: "var(--foreground)",
+                      border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    {TTS_MODELS.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.label} — {model.size}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                    style={{ color: "var(--muted-light)" }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -397,7 +456,7 @@ export default function TextToSpeechPage() {
               className="font-medium"
               style={{ color: "var(--foreground)" }}
             >
-              SpeechT5
+              {selectedModel.label}
             </span>
           </div>
           <p

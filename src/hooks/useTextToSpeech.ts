@@ -47,7 +47,7 @@ export function useTextToSpeech(): TextToSpeechState {
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
   const [audioResult, setAudioResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [modelId, setModelId] = useState(DEFAULT_TTS_MODEL_ID);
+  const [modelId, setModelIdState] = useState(DEFAULT_TTS_MODEL_ID);
 
   // Initialize worker
   useEffect(() => {
@@ -128,8 +128,18 @@ export function useTextToSpeech(): TextToSpeechState {
     workerRef.current = worker;
 
     return () => {
+      worker.postMessage({ type: "dispose" });
       worker.terminate();
     };
+  }, []);
+
+  const setModelId = useCallback((id: string) => {
+    setModelIdState(id);
+    setIsModelReady(false);
+    setIsSynthesizing(false);
+    setProgressItems([]);
+    setAudioResult(null);
+    setError(null);
   }, []);
 
   const loadModel = useCallback(() => {

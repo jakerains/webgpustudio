@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Waves, MessageSquare, ImageMinus, Layers, Sparkles, Volume2, Music, Search, Scissors, Languages } from "lucide-react";
+import { Waves, MessageSquare, ImageMinus, Layers, Sparkles, Volume2, Music, Search, Scissors, Languages, Radio } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Speech to Text", icon: Waves },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/text-to-speech", label: "TTS", icon: Volume2 },
+  { href: "/lfm-audio", label: "LFM", icon: Radio },
   { href: "/music-generation", label: "Music", icon: Music },
   { href: "/background-removal", label: "BG Removal", icon: ImageMinus },
   { href: "/depth-estimation", label: "Depth", icon: Layers },

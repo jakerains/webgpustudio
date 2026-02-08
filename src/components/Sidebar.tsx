@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Waves,
+  Radio,
   MessageSquare,
   Scissors,
   ScanSearch,
@@ -43,6 +44,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { href: "/speech-to-text", label: "Speech to Text", icon: Waves },
       { href: "/text-to-speech", label: "Text to Speech", icon: Speech },
+      { href: "/lfm-audio", label: "LFM Audio", icon: Radio },
       { href: "/music-generation", label: "Music Generation", icon: Music },
     ],
   },

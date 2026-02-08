@@ -1,6 +1,16 @@
 "use client";
 
-export function VoiceSelector() {
+interface VoiceSelectorProps {
+  modelLabel: string;
+  voiceProfile?: string;
+  supportsInterleaved?: boolean;
+}
+
+export function VoiceSelector({
+  modelLabel,
+  voiceProfile,
+  supportsInterleaved = false,
+}: VoiceSelectorProps) {
   return (
     <div
       className="rounded-xl p-3 text-xs"
@@ -16,8 +26,10 @@ export function VoiceSelector() {
           style={{ background: "var(--accent)" }}
         />
         <span>
-          Using default SpeechT5 speaker voice. SpeechT5 synthesizes
-          natural-sounding English speech from text input.
+          {modelLabel} voice profile: {voiceProfile ?? "Default"}.
+          {supportsInterleaved
+            ? " This model also supports ASR and interleaved voice turns in the new LFM Audio demo."
+            : ""}
         </span>
       </div>
     </div>

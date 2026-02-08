@@ -10,6 +10,7 @@ import {
   Eye,
   Mountain,
   Speech,
+  Radio,
   Music,
   Search,
   Shapes,
@@ -244,9 +245,17 @@ export default function LandingPage() {
           <FeatureCard
             href="/text-to-speech"
             title="Text to Speech"
-            description="Convert text to natural-sounding speech with SpeechT5"
+            description="Convert text to natural-sounding speech with LFM2.5 Audio or SpeechT5"
             icon={Speech}
-            modelSize="~150 MB"
+            modelSize="150 MB-1.5 GB"
+            isNew
+          />
+          <FeatureCard
+            href="/lfm-audio"
+            title="LFM Audio Studio"
+            description="Unified ASR, TTS, and near-real-time interleaved voice conversation"
+            icon={Radio}
+            modelSize="~1.5 GB"
             isNew
           />
           <FeatureCard
