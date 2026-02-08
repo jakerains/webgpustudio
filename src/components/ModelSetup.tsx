@@ -1,10 +1,11 @@
 "use client";
 
-import { Settings, Download, CheckCircle2, AlertCircle, Cpu, Zap } from "lucide-react";
+import { Settings, Download, CheckCircle2, AlertCircle, Cpu, Zap, ChevronDown } from "lucide-react";
 import { clsx } from "clsx";
 import { ProgressBar } from "./ProgressBar";
 import { StatusIndicator } from "./StatusIndicator";
 import type { TranscriberProgressItem } from "@/types/transcriber";
+import { WHISPER_MODELS } from "@/lib/constants";
 
 interface ModelSetupProps {
   isModelLoading: boolean;
@@ -12,8 +13,10 @@ interface ModelSetupProps {
   progressItems: TranscriberProgressItem[];
   error: string | null;
   device: "webgpu" | "wasm";
+  modelId: string;
   isWebGPUSupported: boolean;
   onDeviceChange: (device: "webgpu" | "wasm") => void;
+  onModelChange: (modelId: string) => void;
   onLoadModel: () => void;
 }
 
@@ -23,10 +26,13 @@ export function ModelSetup({
   progressItems,
   error,
   device,
+  modelId,
   isWebGPUSupported,
   onDeviceChange,
+  onModelChange,
   onLoadModel,
 }: ModelSetupProps) {
+  const selectedModel = WHISPER_MODELS.find((m) => m.id === modelId) ?? WHISPER_MODELS[0];
   return (
     <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -76,6 +82,30 @@ export function ModelSetup({
             </div>
           </div>
 
+          {/* Model Selector */}
+          <div className="mb-4">
+            <label className="text-xs text-gray-400 mb-2 block">Model</label>
+            <div className="relative">
+              <select
+                value={modelId}
+                onChange={(e) => onModelChange(e.target.value)}
+                disabled={isModelLoading}
+                className={clsx(
+                  "w-full appearance-none px-4 py-2.5 pr-10 rounded-lg text-sm font-medium transition-all bg-white/5 text-gray-200 border border-white/10 hover:bg-white/10 focus:outline-none focus:border-violet-500/40",
+                  isModelLoading && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {WHISPER_MODELS.map((model) => (
+                  <option key={model.id} value={model.id} className="bg-gray-900 text-gray-200">
+                    {model.label} — {model.size}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5">{selectedModel.description}</p>
+          </div>
+
           {/* Load Button */}
           <button
             onClick={onLoadModel}
@@ -119,7 +149,7 @@ export function ModelSetup({
           <div>
             <p className="text-sm font-medium text-emerald-300">Model Ready</p>
             <p className="text-xs text-emerald-400/60">
-              whisper-tiny.en loaded on {device === "webgpu" ? "WebGPU" : "WASM"}
+              {selectedModel.label} loaded on {device === "webgpu" ? "WebGPU" : "WASM"}
             </p>
           </div>
         </div>

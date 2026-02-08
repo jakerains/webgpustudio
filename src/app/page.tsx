@@ -47,8 +47,10 @@ export default function Home() {
           progressItems={transcriber.progressItems}
           error={transcriber.error}
           device={transcriber.device}
+          modelId={transcriber.modelId}
           isWebGPUSupported={isWebGPUSupported}
           onDeviceChange={transcriber.setDevice}
+          onModelChange={transcriber.setModelId}
           onLoadModel={transcriber.loadModel}
         />
 

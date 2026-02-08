@@ -7,6 +7,7 @@ import type {
   WorkerOutgoingMessage,
   ModelLoadProgress,
 } from "@/types/transcriber";
+import { DEFAULT_MODEL_ID } from "@/lib/constants";
 
 interface TranscriberState {
   isModelLoading: boolean;
@@ -16,7 +17,9 @@ interface TranscriberState {
   transcript: TranscriberData | null;
   error: string | null;
   device: "webgpu" | "wasm";
+  modelId: string;
   setDevice: (device: "webgpu" | "wasm") => void;
+  setModelId: (modelId: string) => void;
   loadModel: () => void;
   transcribe: (audio: Float32Array) => void;
 }
@@ -32,6 +35,7 @@ export function useTranscriber(): TranscriberState {
   const [transcript, setTranscript] = useState<TranscriberData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [device, setDevice] = useState<"webgpu" | "wasm">("webgpu");
+  const [modelId, setModelId] = useState(DEFAULT_MODEL_ID);
 
   // Initialize worker
   useEffect(() => {
@@ -119,10 +123,11 @@ export function useTranscriber(): TranscriberState {
   const loadModel = useCallback(() => {
     if (!workerRef.current) return;
     setIsModelLoading(true);
+    setIsModelReady(false);
     setError(null);
     setProgressItems([]);
-    workerRef.current.postMessage({ type: "load", device });
-  }, [device]);
+    workerRef.current.postMessage({ type: "load", device, modelId });
+  }, [device, modelId]);
 
   const transcribe = useCallback((audio: Float32Array) => {
     if (!workerRef.current) return;
@@ -140,7 +145,9 @@ export function useTranscriber(): TranscriberState {
     transcript,
     error,
     device,
+    modelId,
     setDevice,
+    setModelId,
     loadModel,
     transcribe,
   };

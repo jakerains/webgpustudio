@@ -29,7 +29,7 @@ export interface ModelLoadProgress {
 
 // Worker message types
 export type WorkerIncomingMessage =
-  | { type: "load"; device: "webgpu" | "wasm" }
+  | { type: "load"; device: "webgpu" | "wasm"; modelId: string }
   | { type: "transcribe"; audio: Float32Array };
 
 export type WorkerOutgoingMessage =

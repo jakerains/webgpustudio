@@ -4,7 +4,7 @@ import {
   env,
 } from "@huggingface/transformers";
 // Constants inlined — Web Workers don't resolve path aliases
-const MODEL_ID = "onnx-community/whisper-tiny.en";
+const DEFAULT_MODEL_ID = "onnx-community/whisper-tiny.en";
 const CHUNK_LENGTH_S = 30;
 const STRIDE_LENGTH_S = 5;
 
@@ -13,16 +13,23 @@ env.allowLocalModels = false;
 
 class WhisperPipeline {
   static instance: AutomaticSpeechRecognitionPipeline | null = null;
+  static currentModelId: string | null = null;
 
   static async getInstance(
     device: "webgpu" | "wasm",
+    modelId: string = DEFAULT_MODEL_ID,
     progressCallback?: (data: unknown) => void
   ): Promise<AutomaticSpeechRecognitionPipeline> {
+    // Reload if model changed
+    if (this.instance !== null && this.currentModelId !== modelId) {
+      this.instance = null;
+      this.currentModelId = null;
+    }
     if (this.instance === null) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.instance = (await (pipeline as any)(
         "automatic-speech-recognition",
-        MODEL_ID,
+        modelId,
         {
           device,
           dtype: {
@@ -32,6 +39,7 @@ class WhisperPipeline {
           progress_callback: progressCallback,
         }
       )) as AutomaticSpeechRecognitionPipeline;
+      this.currentModelId = modelId;
     }
     return this.instance;
   }
@@ -42,9 +50,9 @@ self.addEventListener("message", async (event: MessageEvent) => {
   const { type } = event.data;
 
   if (type === "load") {
-    const { device } = event.data;
+    const { device, modelId } = event.data;
     try {
-      await WhisperPipeline.getInstance(device, (data: unknown) => {
+      await WhisperPipeline.getInstance(device, modelId, (data: unknown) => {
         const progressData = data as Record<string, unknown>;
         // Forward model loading progress to main thread
         self.postMessage({
