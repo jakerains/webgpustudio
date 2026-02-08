@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Waves,
   MessageSquare,
@@ -15,14 +16,19 @@ import {
   Languages,
   Gpu,
   Zap,
-  Star,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useWebGPUSupport } from "@/hooks/useWebGPUSupport";
 import { CategorySection } from "@/components/CategorySection";
 import { FeatureCard } from "@/components/FeatureCard";
+import { ChangelogModal } from "@/components/ChangelogModal";
+import { APP_VERSION } from "@/lib/version";
 
 export default function LandingPage() {
   const { isSupported, isChecking } = useWebGPUSupport();
+  const [showChangelog, setShowChangelog] = useState(false);
 
   return (
     <main className="min-h-screen">
@@ -41,10 +47,10 @@ export default function LandingPage() {
             </div>
           </div>
           <h1
-            className="text-3xl sm:text-4xl font-bold tracking-tight mb-2"
-            style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
+            className="text-4xl sm:text-5xl font-bold tracking-tight mb-2"
+            style={{ fontFamily: "var(--font-geist-pixel-square)", color: "var(--foreground)" }}
           >
-            WebGPU Studio
+            Web<span className="font-extrabold" style={{ color: "var(--accent)" }}>GPU</span> Studio
           </h1>
           <p className="text-base mb-4" style={{ color: "var(--muted)" }}>
             AI models running entirely in your browser, powered by WebGPU
@@ -66,35 +72,167 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* Featured */}
-        <CategorySection title="Featured" icon={Star}>
-          <FeatureCard
-            href="/speech-to-text"
-            title="Speech to Text"
-            description="Record or upload audio for real-time transcription with Whisper"
-            icon={Waves}
-            modelSize="39-244 MB"
-            isFeatured
+        {/* Featured Section */}
+        <section className="mb-12 -mx-5 px-5 relative">
+          {/* Background glow */}
+          <div
+            className="absolute inset-0 -top-8 -bottom-8 rounded-3xl animate-featured-glow"
+            style={{
+              background: "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(194, 114, 78, 0.08), transparent 70%)",
+              pointerEvents: "none",
+            }}
           />
-          <FeatureCard
-            href="/chat"
-            title="Chat"
-            description="Chat with local LLMs featuring streaming and thinking support"
-            icon={MessageSquare}
-            modelSize="570 MB-2.1 GB"
-            isFeatured
-          />
-          <FeatureCard
-            href="/object-detection"
-            title="Object Detection"
-            description="Real-time object detection with bounding boxes and labels"
-            icon={ScanSearch}
-            modelSize="29-166 MB"
-            isFeatured
-          />
-        </CategorySection>
 
-        {/* Feature Grid by Category */}
+          {/* Section container */}
+          <div
+            className="relative rounded-2xl p-6 sm:p-8 animate-fade-in-up"
+            style={{
+              background: "linear-gradient(145deg, rgba(251, 240, 233, 0.7), rgba(254, 251, 246, 0.9))",
+              border: "1px solid var(--accent-border)",
+              boxShadow: "0 4px 32px rgba(194, 114, 78, 0.08), 0 1px 4px rgba(194, 114, 78, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)",
+            }}
+          >
+            {/* Section header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center animate-gradient-shift"
+                  style={{
+                    background: "linear-gradient(135deg, var(--accent), var(--accent-light), var(--accent))",
+                    boxShadow: "0 2px 8px rgba(194, 114, 78, 0.3)",
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h2
+                    className="text-base sm:text-lg font-bold tracking-tight"
+                    style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
+                  >
+                    Try These First
+                  </h2>
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>
+                    Our most polished experiences, ready to go
+                  </p>
+                </div>
+              </div>
+              <div
+                className="hidden sm:flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full"
+                style={{
+                  background: "var(--accent-bg)",
+                  color: "var(--accent)",
+                  border: "1px solid var(--accent-border)",
+                }}
+              >
+                <Sparkles className="w-2.5 h-2.5" />
+                Featured
+              </div>
+            </div>
+
+            {/* Featured cards — larger, more prominent */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                {
+                  href: "/speech-to-text",
+                  title: "Speech to Text",
+                  description: "Real-time transcription powered by OpenAI Whisper. Record from your mic or upload audio files.",
+                  icon: Waves,
+                  modelSize: "39-244 MB",
+                  tag: "Audio AI",
+                },
+                {
+                  href: "/chat",
+                  title: "Chat",
+                  description: "Conversational AI with streaming responses and thinking support. Runs local LLMs directly in your browser.",
+                  icon: MessageSquare,
+                  modelSize: "570 MB-2.1 GB",
+                  tag: "Text AI",
+                },
+                {
+                  href: "/object-detection",
+                  title: "Object Detection",
+                  description: "Point your camera or upload a photo to detect and label objects in real-time with bounding boxes.",
+                  icon: ScanSearch,
+                  modelSize: "29-166 MB",
+                  tag: "Vision AI",
+                },
+              ].map((item, i) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="featured-card group relative rounded-xl p-5 flex flex-col justify-between transition-all hover:scale-[1.02] active:scale-[0.98] animate-fade-in-up"
+                  style={{
+                    animationDelay: `${0.1 + i * 0.08}s`,
+                    background: "var(--card)",
+                    boxShadow: "0 2px 12px rgba(139, 109, 75, 0.06), 0 8px 32px rgba(139, 109, 75, 0.04)",
+                    minHeight: "180px",
+                  }}
+                >
+                  {/* Top row: icon + tag */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-[-3deg]"
+                      style={{
+                        background: "linear-gradient(135deg, var(--accent), var(--accent-light))",
+                        boxShadow: "0 4px 12px rgba(194, 114, 78, 0.25)",
+                      }}
+                    >
+                      <item.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span
+                      className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "var(--surface)",
+                        color: "var(--accent)",
+                        border: "1px solid var(--accent-border)",
+                      }}
+                    >
+                      {item.tag}
+                    </span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 flex flex-col justify-end">
+                    <h3
+                      className="text-base font-bold mb-1 tracking-tight"
+                      style={{ fontFamily: "var(--font-display)", color: "var(--foreground)" }}
+                    >
+                      {item.title}
+                    </h3>
+                    <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--muted)" }}>
+                      {item.description}
+                    </p>
+
+                    {/* Bottom row: model size + arrow */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                        style={{
+                          background: "var(--surface)",
+                          color: "var(--muted)",
+                          border: "1px solid var(--border-subtle)",
+                        }}
+                      >
+                        {item.modelSize}
+                      </span>
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-all group-hover:translate-x-0.5"
+                        style={{
+                          background: "var(--accent-bg)",
+                          border: "1px solid var(--accent-border)",
+                        }}
+                      >
+                        <ArrowRight className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* All Features by Category */}
         <CategorySection title="Speech & Audio" icon={Waves}>
           <FeatureCard
             href="/speech-to-text"
@@ -202,11 +340,32 @@ export default function LandingPage() {
         </CategorySection>
 
         {/* Footer */}
-        <footer className="mt-8 text-center">
+        <footer className="mt-8 flex flex-col items-center gap-2">
           <p className="text-xs" style={{ color: "var(--muted-light)" }}>
             All processing happens locally in your browser — no data leaves your device
           </p>
+          <button
+            onClick={() => setShowChangelog(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            style={{
+              fontFamily: "var(--font-mono)",
+              background: "var(--surface)",
+              color: "var(--muted)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: "var(--success)" }}
+            />
+            v{APP_VERSION}
+          </button>
         </footer>
+
+        <ChangelogModal
+          isOpen={showChangelog}
+          onClose={() => setShowChangelog(false)}
+        />
       </div>
     </main>
   );

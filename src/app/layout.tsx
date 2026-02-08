@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import { DM_Sans, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
+import {
+  GeistPixelSquare,
+  GeistPixelGrid,
+  GeistPixelCircle,
+  GeistPixelTriangle,
+  GeistPixelLine,
+} from "geist/font/pixel";
 import { Sidebar } from "@/components/Sidebar";
 import "./globals.css";
 
@@ -35,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${dmSans.variable} ${bricolage.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
+        className={`${dmSans.variable} ${bricolage.variable} ${jetbrainsMono.variable} ${GeistPixelSquare.variable} ${GeistPixelGrid.variable} ${GeistPixelCircle.variable} ${GeistPixelTriangle.variable} ${GeistPixelLine.variable} antialiased bg-background text-foreground`}
       >
         <Sidebar />
         {/* Main content area offset by sidebar width on desktop, top bar on mobile */}
