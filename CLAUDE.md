@@ -62,7 +62,15 @@ All pages are `"use client"`. Standard layout: `max-w-2xl mx-auto px-5 py-10 sm:
 
 ### Versioning
 
-`src/lib/version.ts` is the single source of truth for `APP_VERSION` and `CHANGELOG`. Bump version there and sync `package.json`. The landing page footer displays the version and opens a changelog modal on click.
+`src/lib/version.ts` is the single source of truth for `APP_VERSION` and `CHANGELOG`. The landing page footer displays the version and opens a changelog modal on click.
+
+**Before every commit and push**, you must:
+
+1. Review all changes being committed (via `git diff`)
+2. Bump the version in `src/lib/version.ts` (`APP_VERSION`) and `package.json`
+   - **Patch** (0.5.0 → 0.5.1): bug fixes, styling tweaks, copy changes, small additions — this is the default for most work
+   - **Minor** (0.5.0 → 0.6.0): new features, new routes/pages, significant new functionality, major redesigns
+3. Add a new entry to the top of the `CHANGELOG` array in `src/lib/version.ts` with today's date, a short title, and the list of changes with their types (`added`, `improved`, `fixed`, `changed`)
 
 ## Model Names
 

@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.5.0";
+export const APP_VERSION = "0.5.1";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.1",
+    date: "2026-02-08",
+    title: "Developer Docs",
+    changes: [
+      { type: "added", text: "CLAUDE.md with architecture guide and development conventions" },
+      { type: "improved", text: "Auto version bumping and changelog updates before each commit" },
+    ],
+  },
   {
     version: "0.5.0",
     date: "2026-02-08",
