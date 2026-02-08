@@ -24,11 +24,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+type FeatureStatus = "beta" | "wip";
+
 interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
-  badge?: string;
+  status?: FeatureStatus;
 }
 
 interface NavCategory {
@@ -43,9 +45,9 @@ const NAV_CATEGORIES: NavCategory[] = [
     icon: Waves,
     items: [
       { href: "/speech-to-text", label: "Speech to Text", icon: Waves },
-      { href: "/text-to-speech", label: "Text to Speech", icon: Speech },
-      { href: "/lfm-audio", label: "LFM Audio", icon: Radio },
-      { href: "/music-generation", label: "Music Generation", icon: Music },
+      { href: "/text-to-speech", label: "Text to Speech", icon: Speech, status: "beta" },
+      { href: "/lfm-audio", label: "LFM Audio", icon: Radio, status: "beta" },
+      { href: "/music-generation", label: "Music Generation", icon: Music, status: "wip" },
     ],
   },
   {
@@ -54,9 +56,9 @@ const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { href: "/background-removal", label: "Background Removal", icon: Scissors },
       { href: "/object-detection", label: "Object Detection", icon: ScanSearch },
-      { href: "/depth-estimation", label: "Depth Estimation", icon: Mountain },
-      { href: "/image-segmentation", label: "Image Segmentation", icon: Shapes },
-      { href: "/vision-chat", label: "Vision Chat", icon: Eye },
+      { href: "/depth-estimation", label: "Depth Estimation", icon: Mountain, status: "wip" },
+      { href: "/image-segmentation", label: "Image Segmentation", icon: Shapes, status: "beta" },
+      { href: "/vision-chat", label: "Vision Chat", icon: Eye, status: "beta" },
     ],
   },
   {
@@ -64,15 +66,15 @@ const NAV_CATEGORIES: NavCategory[] = [
     icon: MessageSquare,
     items: [
       { href: "/chat", label: "Chat", icon: MessageSquare },
-      { href: "/translation", label: "Translation", icon: Languages },
-      { href: "/semantic-search", label: "Semantic Search", icon: Search },
+      { href: "/translation", label: "Translation", icon: Languages, status: "beta" },
+      { href: "/semantic-search", label: "Semantic Search", icon: Search, status: "beta" },
     ],
   },
   {
     label: "GPU Compute",
     icon: Atom,
     items: [
-      { href: "/particle-simulator", label: "Particle Simulator", icon: Atom },
+      { href: "/particle-simulator", label: "Particle Simulator", icon: Atom, status: "beta" },
     ],
   },
 ];
@@ -191,7 +193,7 @@ export function Sidebar() {
 
                 {isExpanded && (
                   <div className="ml-2 space-y-0.5 mt-0.5">
-                    {category.items.map(({ href, label, icon: Icon }) => {
+                    {category.items.map(({ href, label, icon: Icon, status }) => {
                       const active = isActive(href);
                       return (
                         <Link
@@ -209,7 +211,29 @@ export function Sidebar() {
                           }}
                         >
                           <Icon className="w-4 h-4 shrink-0" />
-                          <span className="truncate">{label}</span>
+                          <span className="truncate flex-1">{label}</span>
+                          {status === "beta" && (
+                            <span
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                              style={{
+                                background: "var(--warning-bg, rgba(234, 179, 8, 0.1))",
+                                color: "var(--warning, #b8860b)",
+                              }}
+                            >
+                              BETA
+                            </span>
+                          )}
+                          {status === "wip" && (
+                            <span
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                              style={{
+                                background: "var(--error-bg)",
+                                color: "var(--error)",
+                              }}
+                            >
+                              WIP
+                            </span>
+                          )}
                         </Link>
                       );
                     })}

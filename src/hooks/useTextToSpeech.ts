@@ -22,8 +22,9 @@ interface ModelLoadProgress {
 }
 
 interface AudioResult {
-  audio: Float32Array;
-  samplingRate: number;
+  audio?: Float32Array;
+  samplingRate?: number;
+  wavBuffer?: ArrayBuffer;
 }
 
 interface TextToSpeechState {
@@ -34,7 +35,9 @@ interface TextToSpeechState {
   audioResult: AudioResult | null;
   error: string | null;
   modelId: string;
+  speakerId: string;
   setModelId: (id: string) => void;
+  setSpeakerId: (id: string) => void;
   loadModel: () => void;
   synthesize: (text: string) => void;
 }
@@ -48,6 +51,7 @@ export function useTextToSpeech(): TextToSpeechState {
   const [audioResult, setAudioResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelIdState] = useState(DEFAULT_TTS_MODEL_ID);
+  const [speakerId, setSpeakerId] = useState("male_1");
 
   // Initialize worker
   useEffect(() => {
@@ -112,8 +116,12 @@ export function useTextToSpeech(): TextToSpeechState {
           setIsModelReady(true);
           break;
         case "result": {
-          const { audio, samplingRate } = message.data;
-          setAudioResult({ audio, samplingRate });
+          const { audio, samplingRate, wavBuffer } = message.data;
+          if (wavBuffer) {
+            setAudioResult({ wavBuffer });
+          } else {
+            setAudioResult({ audio, samplingRate });
+          }
           setIsSynthesizing(false);
           break;
         }
@@ -156,8 +164,8 @@ export function useTextToSpeech(): TextToSpeechState {
     setIsSynthesizing(true);
     setAudioResult(null);
     setError(null);
-    workerRef.current.postMessage({ type: "synthesize", text });
-  }, []);
+    workerRef.current.postMessage({ type: "synthesize", text, speakerId });
+  }, [speakerId]);
 
   return {
     isModelLoading,
@@ -167,7 +175,9 @@ export function useTextToSpeech(): TextToSpeechState {
     audioResult,
     error,
     modelId,
+    speakerId,
     setModelId,
+    setSpeakerId,
     loadModel,
     synthesize,
   };

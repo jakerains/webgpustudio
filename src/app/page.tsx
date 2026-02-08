@@ -295,7 +295,7 @@ export default function LandingPage() {
             description="Convert text to natural-sounding speech with LFM2.5 Audio or SpeechT5"
             icon={Speech}
             modelSize="150 MB-1.5 GB"
-            isNew
+            status="experimental"
           />
           <FeatureCard
             href="/lfm-audio"
@@ -303,7 +303,7 @@ export default function LandingPage() {
             description="Unified ASR, TTS, and near-real-time interleaved voice conversation"
             icon={Radio}
             modelSize="~1.5 GB"
-            isNew
+            status="experimental"
           />
           <FeatureCard
             href="/music-generation"
@@ -311,7 +311,7 @@ export default function LandingPage() {
             description="Generate music from text prompts with Meta's MusicGen"
             icon={Music}
             modelSize="~1.5 GB"
-            isNew
+            status="broken"
           />
         </CategorySection>
 
@@ -322,7 +322,6 @@ export default function LandingPage() {
             description="Instantly remove image backgrounds with RMBG"
             icon={Scissors}
             modelSize="44-200 MB"
-            isNew
           />
           <FeatureCard
             href="/object-detection"
@@ -330,7 +329,6 @@ export default function LandingPage() {
             description="Real-time object detection with bounding boxes and labels"
             icon={ScanSearch}
             modelSize="29-166 MB"
-            isNew
           />
           <FeatureCard
             href="/depth-estimation"
@@ -338,7 +336,7 @@ export default function LandingPage() {
             description="Generate depth maps from 2D images with Depth Anything V2"
             icon={Mountain}
             modelSize="~97 MB"
-            isNew
+            status="broken"
           />
           <FeatureCard
             href="/image-segmentation"
@@ -346,7 +344,7 @@ export default function LandingPage() {
             description="Click to segment objects with Meta's SAM3 — upload or use your camera"
             icon={Shapes}
             modelSize="~301 MB"
-            isNew
+            status="experimental"
           />
           <FeatureCard
             href="/vision-chat"
@@ -354,7 +352,7 @@ export default function LandingPage() {
             description="Upload images and ask questions about them with a vision-language model"
             icon={Eye}
             modelSize="~500 MB"
-            isNew
+            status="experimental"
           />
         </CategorySection>
 
@@ -372,7 +370,7 @@ export default function LandingPage() {
             description="Translate between 200 languages with Meta's NLLB"
             icon={Languages}
             modelSize="~600 MB"
-            isNew
+            status="experimental"
           />
           <FeatureCard
             href="/semantic-search"
@@ -380,7 +378,7 @@ export default function LandingPage() {
             description="Search documents by meaning, not just keywords"
             icon={Search}
             modelSize="~25 MB"
-            isNew
+            status="experimental"
           />
         </CategorySection>
 
@@ -391,7 +389,7 @@ export default function LandingPage() {
             description="Mesmerizing GPU-powered physics with 10k+ particles using compute shaders"
             icon={Atom}
             modelSize="No model"
-            isNew
+            status="experimental"
           />
         </CategorySection>
         </>}
@@ -400,6 +398,10 @@ export default function LandingPage() {
         <footer className="mt-8 flex flex-col items-center gap-4">
           <p className="text-xs" style={{ color: "var(--muted-light)" }}>
             All processing happens locally in your browser — no data leaves your device
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--muted-light)" }}>
+            Features marked <span style={{ color: "var(--warning, #b8860b)" }} className="font-semibold">BETA</span> are experimental and may not work as expected.{" "}
+            <span style={{ color: "var(--error)" }} className="font-semibold">WIP</span> features are known to have issues.
           </p>
 
           {/* GitHub + Version row */}

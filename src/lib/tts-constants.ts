@@ -21,6 +21,14 @@ export const TTS_MODELS: TTSModelOption[] = [
     voiceProfile: "UK female voice",
   },
   {
+    id: "onnx-community/OuteTTS-0.2-500M",
+    label: "OuteTTS v0.2",
+    size: "~125 MB (q4)",
+    description: "Multi-language TTS with speaker profiles (EN/CN/JP/KR)",
+    supportsTts: true,
+    voiceProfile: "male_1, female_1, or random",
+  },
+  {
     id: "Xenova/speecht5_tts",
     label: "SpeechT5",
     size: "~150 MB",
@@ -29,6 +37,12 @@ export const TTS_MODELS: TTSModelOption[] = [
     voiceProfile: "Default SpeechT5 speaker",
   },
 ];
+
+export const OUTETTS_SPEAKERS = [
+  { id: "male_1", label: "Male" },
+  { id: "female_1", label: "Female" },
+  { id: "random", label: "Random" },
+] as const;
 
 export const DEFAULT_TTS_MODEL_ID = TTS_MODELS[0].id;
 export const SPEECHT5_SPEAKER_EMBEDDINGS_URL =

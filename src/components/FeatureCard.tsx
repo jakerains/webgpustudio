@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { type LucideIcon } from "lucide-react";
 
+type FeatureStatus = "working" | "experimental" | "broken";
+
 interface FeatureCardProps {
   href: string;
   title: string;
@@ -11,6 +13,7 @@ interface FeatureCardProps {
   modelSize?: string;
   isNew?: boolean;
   isFeatured?: boolean;
+  status?: FeatureStatus;
 }
 
 export function FeatureCard({
@@ -21,6 +24,7 @@ export function FeatureCard({
   modelSize,
   isNew,
   isFeatured,
+  status,
 }: FeatureCardProps) {
   return (
     <Link
@@ -60,7 +64,31 @@ export function FeatureCard({
               FEATURED
             </span>
           )}
-          {isNew && !isFeatured && (
+          {status === "experimental" && (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              style={{
+                background: "var(--warning-bg, rgba(234, 179, 8, 0.1))",
+                color: "var(--warning, #b8860b)",
+                border: "1px solid var(--warning-border, rgba(234, 179, 8, 0.25))",
+              }}
+            >
+              BETA
+            </span>
+          )}
+          {status === "broken" && (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              style={{
+                background: "var(--error-bg)",
+                color: "var(--error)",
+                border: "1px solid var(--error-border)",
+              }}
+            >
+              WIP
+            </span>
+          )}
+          {isNew && !isFeatured && !status && (
             <span
               className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
               style={{

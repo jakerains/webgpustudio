@@ -17,10 +17,11 @@ import { VoiceSelector } from "@/components/tts/VoiceSelector";
 import { AudioPlayer } from "@/components/shared/AudioPlayer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWebGPUSupport } from "@/hooks/useWebGPUSupport";
-import { TTS_MODELS } from "@/lib/tts-constants";
+import { TTS_MODELS, OUTETTS_SPEAKERS } from "@/lib/tts-constants";
 import { float32ToWav } from "@/lib/canvas-utils";
 
 const LFM_AUDIO_MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-ONNX";
+const OUTETTS_MODEL_ID = "onnx-community/OuteTTS-0.2-500M";
 
 export default function TextToSpeechPage() {
   const { isSupported: isWebGPUSupported, isChecking: isCheckingWebGPU } =
@@ -32,11 +33,19 @@ export default function TextToSpeechPage() {
   const selectedModel =
     TTS_MODELS.find((m) => m.id === tts.modelId) ?? TTS_MODELS[0];
   const isLfmSelected = selectedModel.id === LFM_AUDIO_MODEL_ID;
+  const isOuteTtsSelected = selectedModel.id === OUTETTS_MODEL_ID;
 
   const audioUrl = useMemo(() => {
     if (!tts.audioResult) return null;
-    const wav = float32ToWav(tts.audioResult.audio, tts.audioResult.samplingRate);
-    return URL.createObjectURL(wav);
+    if (tts.audioResult.wavBuffer) {
+      const blob = new Blob([tts.audioResult.wavBuffer], { type: "audio/wav" });
+      return URL.createObjectURL(blob);
+    }
+    if (tts.audioResult.audio && tts.audioResult.samplingRate) {
+      const wav = float32ToWav(tts.audioResult.audio, tts.audioResult.samplingRate);
+      return URL.createObjectURL(wav);
+    }
+    return null;
   }, [tts.audioResult]);
 
   useEffect(() => {
@@ -54,7 +63,9 @@ export default function TextToSpeechPage() {
   };
 
   const duration = tts.audioResult
-    ? (tts.audioResult.audio.length / tts.audioResult.samplingRate).toFixed(1)
+    ? tts.audioResult.audio && tts.audioResult.samplingRate
+      ? (tts.audioResult.audio.length / tts.audioResult.samplingRate).toFixed(1)
+      : null
     : null;
 
   return (
@@ -199,6 +210,9 @@ export default function TextToSpeechPage() {
                   modelLabel={selectedModel.label}
                   voiceProfile={selectedModel.voiceProfile}
                   supportsInterleaved={selectedModel.supportsInterleaved}
+                  speakers={isOuteTtsSelected ? OUTETTS_SPEAKERS : undefined}
+                  selectedSpeaker={isOuteTtsSelected ? tts.speakerId : undefined}
+                  onSpeakerChange={isOuteTtsSelected ? tts.setSpeakerId : undefined}
                 />
               </div>
 
@@ -425,15 +439,19 @@ export default function TextToSpeechPage() {
             <AudioPlayer audioUrl={audioUrl} filename="speech.wav" />
 
             <div className="flex items-center gap-3 mt-3">
-              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                Duration: {duration}s
-              </span>
-              <span
-                className="text-xs"
-                style={{ color: "var(--muted-light)" }}
-              >
-                Sample rate: {tts.audioResult.samplingRate} Hz
-              </span>
+              {duration && (
+                <span className="text-xs" style={{ color: "var(--muted)" }}>
+                  Duration: {duration}s
+                </span>
+              )}
+              {tts.audioResult.samplingRate && (
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--muted-light)" }}
+                >
+                  Sample rate: {tts.audioResult.samplingRate} Hz
+                </span>
+              )}
             </div>
           </div>
         )}

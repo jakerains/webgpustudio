@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.7.1";
+export const APP_VERSION = "0.8.0";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.8.0",
+    date: "2026-02-08",
+    title: "OuteTTS TTS & Feature Status Badges",
+    changes: [
+      { type: "added", text: "OuteTTS v0.2 (500M) — multi-language TTS with male/female/random speaker profiles" },
+      { type: "added", text: "Speaker voice selector dropdown for OuteTTS model" },
+      { type: "added", text: "BETA and WIP status badges on feature cards and sidebar navigation" },
+      { type: "improved", text: "TTS page now handles both raw PCM and pre-encoded WAV audio formats" },
+      { type: "improved", text: "Landing page cards show feature maturity status (working, experimental, broken)" },
+    ],
+  },
   {
     version: "0.7.1",
     date: "2026-02-08",

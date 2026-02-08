@@ -4,6 +4,7 @@ import { AudioModel } from "../../lib/lfm/audio-model.js";
 // Constants inlined -- Web Workers don't resolve path aliases
 const DEFAULT_MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-ONNX";
 const LFM_MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-ONNX";
+const OUTETTS_MODEL_ID = "onnx-community/OuteTTS-0.2-500M";
 const SPEECHT5_SPEAKER_EMBEDDINGS_URL =
   "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin";
 
@@ -14,6 +15,8 @@ env.useBrowserCache = true;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let ttsPipeline: any = null;
 let lfmModel: AudioModel | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let outeTtsInterface: any = null;
 let currentModelId: string | null = null;
 
 function disposeCurrentModel() {
@@ -23,6 +26,7 @@ function disposeCurrentModel() {
   }
 
   ttsPipeline = null;
+  outeTtsInterface = null;
   currentModelId = null;
 }
 
@@ -106,6 +110,33 @@ async function loadSpeecht5Model(
   currentModelId = modelId;
 }
 
+async function loadOuteTtsModel(modelId: string) {
+  // Dynamic import — only load outetts when actually needed
+  const { HFModelConfig_v1, InterfaceHF } = await import("outetts");
+
+  // Detect WebGPU shader-f16 support for optimal quantization
+  let fp16Supported = false;
+  try {
+    const adapter = await navigator.gpu?.requestAdapter();
+    if (adapter) {
+      fp16Supported = adapter.features.has("shader-f16");
+    }
+  } catch {
+    // WebGPU not available, fall back to WASM
+  }
+
+  const config = new HFModelConfig_v1({
+    model_path: modelId,
+    language: "en",
+    dtype: fp16Supported ? "q4f16" : "q4",
+    device: "webgpu",
+  });
+
+  const ttsInterface = await InterfaceHF({ model_version: "0.2", cfg: config });
+  outeTtsInterface = ttsInterface;
+  currentModelId = modelId;
+}
+
 async function loadModel(
   modelId: string,
   progressCallback: (data: unknown) => void
@@ -121,6 +152,11 @@ async function loadModel(
 
   if (modelId === LFM_MODEL_ID) {
     await loadLfmModel(modelId);
+    return;
+  }
+
+  if (modelId === OUTETTS_MODEL_ID) {
+    await loadOuteTtsModel(modelId);
     return;
   }
 
@@ -157,6 +193,36 @@ async function synthesizeWithLfm(text: string) {
       text: ttsResult.textOutput ?? "",
     },
   });
+}
+
+async function synthesizeWithOuteTts(text: string, speakerId?: string) {
+  if (!outeTtsInterface) {
+    throw new Error("OuteTTS model not loaded");
+  }
+
+  // Load speaker profile: null = random voice
+  const speaker = speakerId && speakerId !== "random"
+    ? outeTtsInterface.load_default_speaker(speakerId)
+    : null;
+
+  const output = await outeTtsInterface.generate({
+    text,
+    speaker,
+    temperature: 0.1,
+    repetition_penalty: 1.1,
+    max_length: 4096,
+  });
+
+  const wavBuffer: ArrayBuffer = output.to_wav();
+
+  self.postMessage(
+    {
+      type: "result",
+      data: { wavBuffer },
+    },
+    // Transfer the ArrayBuffer instead of copying
+    { transfer: [wavBuffer] }
+  );
 }
 
 async function synthesizeWithSpeecht5(text: string) {
@@ -212,10 +278,12 @@ self.addEventListener("message", async (event: MessageEvent) => {
   }
 
   if (type === "synthesize") {
-    const { text } = event.data;
+    const { text, speakerId } = event.data;
     try {
       if (currentModelId === LFM_MODEL_ID) {
         await synthesizeWithLfm(text);
+      } else if (currentModelId === OUTETTS_MODEL_ID) {
+        await synthesizeWithOuteTts(text, speakerId);
       } else {
         await synthesizeWithSpeecht5(text);
       }

@@ -86,8 +86,8 @@ Each WebGPU experiment's current tested status. Update this list as features are
 | `/image-segmentation` | Segment Anything (SAM) | ⚠️ Partial | Sort of works, needs fixes |
 | `/semantic-search` | MiniLM Semantic Search | ⚠️ Partial | Needs work |
 | `/particle-simulator` | WebGPU Particle Simulator | ⚠️ Partial | Works but needs polish |
-| `/depth-estimation` | Depth Anything V2 | 🔘 Untested | |
-| `/text-to-speech` | SpeechT5 TTS | 🔘 Untested | |
+| `/depth-estimation` | Depth Anything V2 | ❌ Broken | |
+| `/text-to-speech` | TTS (LFM/OuteTTS/SpeechT5) | 🔘 Untested | OuteTTS v0.2 added |
 | `/lfm-audio` | LFM Audio Studio | 🔘 Untested | |
 | `/vision-chat` | SmolVLM Vision Chat | 🔘 Untested | |
 | `/translation` | NLLB-200 Translation | 🔘 Untested | |
