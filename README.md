@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+
+# WebGPU Studio
+
+**AI models running entirely in your browser, powered by WebGPU.**
+
+No servers. No API keys. No data leaves your device.
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+[Live Demo](https://webgpustudio.vercel.app) &nbsp;&middot;&nbsp; [Report Bug](https://github.com/jakerains/webgpustudio/issues) &nbsp;&middot;&nbsp; [Request Feature](https://github.com/jakerains/webgpustudio/issues)
+
+</div>
+
+---
+
+## What is this?
+
+WebGPU Studio is an open-source collection of **12 AI-powered tools** that run completely client-side using [WebGPU](https://www.w3.org/TR/webgpu/) acceleration. Models are downloaded once from [Hugging Face Hub](https://huggingface.co/) and cached in your browser — after that, everything works offline.
+
+Built with [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) for ML inference and raw WebGPU compute shaders for GPU-native features.
+
+## Features
+
+### Speech & Audio
+| Feature | Description | Models | Size |
+|---------|-------------|--------|------|
+| **Speech to Text** | Real-time transcription from mic or audio files | OpenAI Whisper (5 variants) | 39-244 MB |
+| **Text to Speech** | Convert text to natural-sounding speech | SpeechT5 | ~150 MB |
+| **Music Generation** | Generate music from text prompts | Meta MusicGen | ~1.5 GB |
+
+### Vision & Image
+| Feature | Description | Models | Size |
+|---------|-------------|--------|------|
+| **Background Removal** | Instantly remove image backgrounds | RMBG | 44-200 MB |
+| **Object Detection** | Real-time detection with webcam or upload | YOLOS / DETR | 29-166 MB |
+| **Depth Estimation** | Generate depth maps from 2D images | Depth Anything V2 | ~97 MB |
+| **Image Segmentation** | Click-to-segment with point prompts | Meta SAM3 / SAM1 | ~301 MB |
+| **Vision Chat** | Ask questions about images | SmolVLM | ~500 MB |
+
+### Text & Language
+| Feature | Description | Models | Size |
+|---------|-------------|--------|------|
+| **Chat** | Conversational AI with streaming & thinking | Qwen3 / SmolLM3 / LFM | 570 MB-2.1 GB |
+| **Translation** | Translate between 200 languages | Meta NLLB-200 | ~600 MB |
+| **Semantic Search** | Search documents by meaning | MiniLM | ~25 MB |
+
+### GPU Compute
+| Feature | Description | Size |
+|---------|-------------|------|
+| **Particle Simulator** | 10k+ particle physics via raw WebGPU compute shaders (WGSL) | No model |
+
+All vision features support **webcam capture** in addition to file upload.
+
+## Requirements
+
+- A browser with [WebGPU support](https://caniuse.com/webgpu) (Chrome 113+, Edge 113+, or Firefox Nightly)
+- Falls back to WASM for some features when WebGPU is unavailable
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Clone the repo
+git clone https://github.com/jakerains/webgpustudio.git
+cd webgpustudio
+
+# Install dependencies
+npm install
+
+# Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in Chrome.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Layer | Technology |
+|-------|-----------|
+| Framework | [Next.js 16](https://nextjs.org/) (App Router) |
+| UI | [React 19](https://react.dev/) + [Tailwind CSS 4](https://tailwindcss.com/) |
+| ML Inference | [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) via Web Workers |
+| GPU Compute | [WebGPU API](https://www.w3.org/TR/webgpu/) + [WGSL](https://www.w3.org/TR/WGSL/) shaders |
+| Typography | [DM Sans](https://fonts.google.com/specimen/DM+Sans), [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque), [Geist Pixel](https://vercel.com/font) |
+| Icons | [Lucide React](https://lucide.dev/) |
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+Every feature follows the same four-layer pattern:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+Model Registry (constants) → Web Worker (inference) → Hook (bridge) → Page (UI)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Model registries** are plain arrays in `src/lib/*-constants.ts` — adding a model is adding an array entry
+- **Web Workers** run inference off the main thread with a singleton cache pattern
+- **Custom hooks** bridge worker messages to React state
+- **Pages** are `"use client"` components that compose hooks + shared UI
 
-## Deploy on Vercel
+All inference runs in Web Workers so the UI never freezes during model loading or inference.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    page.tsx                    # Landing page
+    layout.tsx                  # Root layout (fonts, sidebar)
+    globals.css                 # Design system (CSS variables)
+    {feature}/
+      page.tsx                  # Feature page
+      {feature}-worker.ts       # Web Worker for inference
+  components/
+    shared/                     # Reusable: ImageDropzone, WebcamView, AudioPlayer, etc.
+    {feature}/                  # Feature-specific components
+    Sidebar.tsx                 # Navigation
+    ChangelogModal.tsx          # Version history modal
+  hooks/
+    use{Feature}.ts             # Worker ↔ React bridge per feature
+  lib/
+    {feature}-constants.ts      # Model registries
+    version.ts                  # App version + changelog data
+    canvas-utils.ts             # Image/audio conversion utilities
+    particle-engine.ts          # Raw WebGPU compute engine
+    particle-shaders.ts         # WGSL shader source
+```
+
+## Contributing
+
+Contributions are welcome! The easiest way to add value:
+
+1. **Add a new model** — just add an entry to the relevant constants file in `src/lib/`
+2. **Add a new feature** — follow the four-layer pattern above
+3. **Fix bugs or improve UX** — open an issue first so we can discuss
+
+## License
+
+MIT
+
+---
+
+<div align="center">
+<sub>Built with WebGPU. All processing happens locally — no data leaves your device.</sub>
+</div>

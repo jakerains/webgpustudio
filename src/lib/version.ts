@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.5.1";
+export const APP_VERSION = "0.5.2";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.5.2",
+    date: "2026-02-08",
+    title: "README & Repo Rename",
+    changes: [
+      { type: "added", text: "Comprehensive README with feature tables, architecture guide, and tech stack" },
+      { type: "changed", text: "Repository renamed from whispergpu to webgpustudio" },
+    ],
+  },
   {
     version: "0.5.1",
     date: "2026-02-08",
