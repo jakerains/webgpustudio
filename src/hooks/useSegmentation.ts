@@ -21,6 +21,12 @@ export interface MaskData {
   height: number;
 }
 
+export interface ClickPoint {
+  x: number;
+  y: number;
+  label: 0 | 1; // 1 = positive (include), 0 = negative (exclude)
+}
+
 interface SegmentationState {
   isModelLoading: boolean;
   isModelReady: boolean;
@@ -28,11 +34,13 @@ interface SegmentationState {
   progressItems: ProgressItem[];
   masks: MaskData[];
   scores: number[];
+  selectedMaskIndex: number;
+  setSelectedMaskIndex: (index: number) => void;
   error: string | null;
   modelId: string;
   setModelId: (id: string) => void;
   loadModel: () => void;
-  segment: (imageDataUrl: string, clickPoints: Array<{ x: number; y: number }>) => void;
+  segment: (imageDataUrl: string, clickPoints: ClickPoint[]) => void;
 }
 
 export function useSegmentation(): SegmentationState {
@@ -43,6 +51,7 @@ export function useSegmentation(): SegmentationState {
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
   const [masks, setMasks] = useState<MaskData[]>([]);
   const [scores, setScores] = useState<number[]>([]);
+  const [selectedMaskIndex, setSelectedMaskIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelId] = useState(DEFAULT_SEGMENTATION_MODEL_ID);
 
@@ -114,6 +123,7 @@ export function useSegmentation(): SegmentationState {
           };
           setMasks(maskResults);
           setScores(scoreResults || []);
+          setSelectedMaskIndex(0); // Reset to best mask on new results
           setIsSegmenting(false);
           break;
         }
@@ -148,7 +158,7 @@ export function useSegmentation(): SegmentationState {
   }, [modelId]);
 
   const segment = useCallback(
-    (imageDataUrl: string, clickPoints: Array<{ x: number; y: number }>) => {
+    (imageDataUrl: string, clickPoints: ClickPoint[]) => {
       if (!workerRef.current) return;
       setIsSegmenting(true);
       setError(null);
@@ -168,6 +178,8 @@ export function useSegmentation(): SegmentationState {
     progressItems,
     masks,
     scores,
+    selectedMaskIndex,
+    setSelectedMaskIndex,
     error,
     modelId,
     setModelId,

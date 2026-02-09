@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.9.1";
+export const APP_VERSION = "0.9.2";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,20 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.2",
+    date: "2026-02-08",
+    title: "Image Segmentation Overhaul",
+    changes: [
+      { type: "added", text: "Multi-mask granularity selector — choose between Precise, Balanced, and Broad masks" },
+      { type: "added", text: "SlimSAM (Xenova) lightweight model option (~107 MB vs SAM3's ~301 MB)" },
+      { type: "added", text: "Right-click to place negative points that exclude regions from segmentation" },
+      { type: "improved", text: "Mask visualization with dimmed background, edge contours, and subtle color fill" },
+      { type: "improved", text: "Click points now show + (include) and x (exclude) icons with blue/red colors" },
+      { type: "fixed", text: "SAM1 mask threshold bug — raw float logits now properly binarized" },
+      { type: "fixed", text: "All SAM masks returned sorted by confidence instead of only showing one" },
+    ],
+  },
   {
     version: "0.9.1",
     date: "2026-02-08",

@@ -83,7 +83,7 @@ Each WebGPU experiment's current tested status. Update this list as features are
 | `/background-removal` | RMBG Background Removal | ✅ Working | |
 | `/object-detection` | YOLOS/DETR Object Detection | ✅ Working | |
 | `/depth-estimation` | Depth Anything V2 | 🔘 Untested | Fixed: now uses ONNX model |
-| `/image-segmentation` | Segment Anything (SAM3) | ⚠️ Partial | SAM3 only, SAM1 removed |
+| `/image-segmentation` | Segment Anything (SAM3 + SlimSAM) | 🔘 Untested | Multi-mask, negative points, SAM1 re-added |
 | `/text-to-speech` | TTS (LFM/OuteTTS) | 🔘 Untested | SpeechT5 removed |
 | `/vision-chat` | SmolVLM Vision Chat | 🔘 Untested | |
 | `/particle-simulator` | WebGPU Particle Simulator | ✅ Working | Raw WGSL compute shaders |

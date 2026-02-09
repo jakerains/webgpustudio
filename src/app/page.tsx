@@ -316,7 +316,6 @@ export default function LandingPage() {
             description="Generate depth maps from 2D images with Depth Anything V2"
             icon={Mountain}
             modelSize="~99 MB"
-            status="experimental"
           />
           <FeatureCard
             href="/image-segmentation"

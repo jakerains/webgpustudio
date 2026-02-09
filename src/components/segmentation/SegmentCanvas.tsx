@@ -2,46 +2,45 @@
 
 import { useRef, useEffect, useCallback } from "react";
 
-const MASK_COLORS = [
-  [255, 0, 0],     // red
-  [0, 128, 255],   // blue
-  [0, 200, 0],     // green
-  [255, 165, 0],   // orange
-  [128, 0, 255],   // purple
-  [255, 255, 0],   // yellow
-  [0, 200, 200],   // cyan
-  [255, 0, 128],   // pink
-];
-
 interface MaskData {
   data: number[];
   width: number;
   height: number;
 }
 
+interface ClickPoint {
+  x: number;
+  y: number;
+  label: 0 | 1;
+}
+
 interface SegmentCanvasProps {
   imageSrc: string | null;
-  masks: MaskData[];
-  points: Array<{ x: number; y: number }>;
-  onImageClick: (point: { x: number; y: number }) => void;
+  mask: MaskData | null; // Single selected mask (not array)
+  points: ClickPoint[];
+  onImageClick: (point: ClickPoint) => void;
   width: number;
   height: number;
-  scores?: number[];
+  score?: number;
 }
+
+// Accent color for the mask overlay
+const MASK_COLOR = [59, 130, 246]; // blue-500
+const POSITIVE_COLOR = [59, 130, 246]; // blue for include
+const NEGATIVE_COLOR = [239, 68, 68]; // red for exclude
 
 export function SegmentCanvas({
   imageSrc,
-  masks,
+  mask,
   points,
   onImageClick,
   width,
   height,
-  scores,
+  score,
 }: SegmentCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  // Draw everything
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -50,95 +49,170 @@ export function SegmentCanvas({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw the image
+    // Draw the base image
     if (imageRef.current) {
       ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
     }
 
-    // Draw masks with semi-transparency
-    for (let m = 0; m < masks.length; m++) {
-      const mask = masks[m];
-      const color = MASK_COLORS[m % MASK_COLORS.length];
-      const imageData = ctx.createImageData(mask.width, mask.height);
+    if (mask) {
+      // --- Dimmed background outside mask ---
+      // Create a full-canvas dark overlay, then "cut out" the mask area
+      const dimCanvas = document.createElement("canvas");
+      dimCanvas.width = canvas.width;
+      dimCanvas.height = canvas.height;
+      const dimCtx = dimCanvas.getContext("2d")!;
 
+      // Fill with semi-transparent black (dims the background)
+      dimCtx.fillStyle = "rgba(0, 0, 0, 0.45)";
+      dimCtx.fillRect(0, 0, dimCanvas.width, dimCanvas.height);
+
+      // Create mask at native resolution, then scale
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = mask.width;
+      maskCanvas.height = mask.height;
+      const maskCtx = maskCanvas.getContext("2d")!;
+      const maskImageData = maskCtx.createImageData(mask.width, mask.height);
       for (let i = 0; i < mask.data.length; i++) {
-        const val = mask.data[i];
-        if (val > 0) {
-          imageData.data[i * 4] = color[0];
-          imageData.data[i * 4 + 1] = color[1];
-          imageData.data[i * 4 + 2] = color[2];
-          imageData.data[i * 4 + 3] = 100; // semi-transparent
+        if (mask.data[i] > 0) {
+          maskImageData.data[i * 4] = 255;
+          maskImageData.data[i * 4 + 1] = 255;
+          maskImageData.data[i * 4 + 2] = 255;
+          maskImageData.data[i * 4 + 3] = 255;
         }
       }
+      maskCtx.putImageData(maskImageData, 0, 0);
 
-      // Create a temporary canvas for the mask at original resolution
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = mask.width;
-      tempCanvas.height = mask.height;
-      const tempCtx = tempCanvas.getContext("2d");
-      if (tempCtx) {
-        tempCtx.putImageData(imageData, 0, 0);
-        // Draw scaled to the display canvas
-        ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+      // Cut out the mask region from the dim layer using destination-out
+      dimCtx.globalCompositeOperation = "destination-out";
+      dimCtx.drawImage(maskCanvas, 0, 0, dimCanvas.width, dimCanvas.height);
+
+      // Apply the dimmed overlay to the main canvas
+      ctx.drawImage(dimCanvas, 0, 0);
+
+      // --- Colored mask fill (subtle) ---
+      const fillCanvas = document.createElement("canvas");
+      fillCanvas.width = mask.width;
+      fillCanvas.height = mask.height;
+      const fillCtx = fillCanvas.getContext("2d")!;
+      const fillData = fillCtx.createImageData(mask.width, mask.height);
+      for (let i = 0; i < mask.data.length; i++) {
+        if (mask.data[i] > 0) {
+          fillData.data[i * 4] = MASK_COLOR[0];
+          fillData.data[i * 4 + 1] = MASK_COLOR[1];
+          fillData.data[i * 4 + 2] = MASK_COLOR[2];
+          fillData.data[i * 4 + 3] = 50; // Very subtle tint
+        }
+      }
+      fillCtx.putImageData(fillData, 0, 0);
+      ctx.drawImage(fillCanvas, 0, 0, canvas.width, canvas.height);
+
+      // --- Edge contour ---
+      // Detect edges in the mask and draw them as a bright outline
+      const edgeCanvas = document.createElement("canvas");
+      edgeCanvas.width = mask.width;
+      edgeCanvas.height = mask.height;
+      const edgeCtx = edgeCanvas.getContext("2d")!;
+      const edgeData = edgeCtx.createImageData(mask.width, mask.height);
+
+      for (let y = 0; y < mask.height; y++) {
+        for (let x = 0; x < mask.width; x++) {
+          const idx = y * mask.width + x;
+          if (mask.data[idx] <= 0) continue;
+
+          // Check 4-connected neighbors — if any neighbor is outside or 0, this is an edge
+          const isEdge =
+            x === 0 || x === mask.width - 1 ||
+            y === 0 || y === mask.height - 1 ||
+            mask.data[idx - 1] <= 0 ||
+            mask.data[idx + 1] <= 0 ||
+            mask.data[idx - mask.width] <= 0 ||
+            mask.data[idx + mask.width] <= 0;
+
+          if (isEdge) {
+            const pi = idx * 4;
+            edgeData.data[pi] = MASK_COLOR[0];
+            edgeData.data[pi + 1] = MASK_COLOR[1];
+            edgeData.data[pi + 2] = MASK_COLOR[2];
+            edgeData.data[pi + 3] = 255;
+          }
+        }
+      }
+      edgeCtx.putImageData(edgeData, 0, 0);
+
+      // Draw edge scaled up — use a slightly thicker line by drawing twice with offset
+      ctx.drawImage(edgeCanvas, 0, 0, canvas.width, canvas.height);
+
+      // --- IoU score pill ---
+      if (score !== undefined && score !== null) {
+        const label = `${(score * 100).toFixed(1)}% confidence`;
+        ctx.font = "bold 11px sans-serif";
+        const metrics = ctx.measureText(label);
+        const px = 6;
+        const py = 4;
+        const pillX = 8;
+        const pillY = 8;
+
+        ctx.fillStyle = `rgba(${MASK_COLOR[0]}, ${MASK_COLOR[1]}, ${MASK_COLOR[2]}, 0.9)`;
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, metrics.width + px * 2, 18 + py, 6);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff";
+        ctx.fillText(label, pillX + px, pillY + 14);
       }
     }
 
-    // Draw click points
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
-      const color = MASK_COLORS[i % MASK_COLORS.length];
-
-      // Scale point from image coords to canvas coords
+    // --- Draw click points ---
+    for (const p of points) {
       const scaleX = canvas.width / (imageRef.current?.naturalWidth || canvas.width);
       const scaleY = canvas.height / (imageRef.current?.naturalHeight || canvas.height);
       const cx = p.x * scaleX;
       const cy = p.y * scaleY;
 
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-      ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-      ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
+      const isPositive = p.label === 1;
+      const color = isPositive ? POSITIVE_COLOR : NEGATIVE_COLOR;
 
-    // Draw IoU scores as overlay labels
-    if (scores && scores.length > 0) {
-      for (let i = 0; i < scores.length && i < masks.length; i++) {
-        const score = scores[i];
-        if (score === undefined || score === null) continue;
-
-        const label = `IoU: ${(score * 100).toFixed(1)}%`;
-
-        // Position the label near the top-left of the canvas, stacked per mask
-        const labelX = 10;
-        const labelY = 24 + i * 28;
-
-        const color = MASK_COLORS[i % MASK_COLORS.length];
-
-        ctx.font = "bold 13px sans-serif";
-        const metrics = ctx.measureText(label);
-        const padding = 4;
-
-        // Background pill
-        ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.85)`;
+      if (isPositive) {
+        // Filled circle with white border for positive points
         ctx.beginPath();
-        ctx.roundRect(
-          labelX - padding,
-          labelY - 13 - padding,
-          metrics.width + padding * 2,
-          18 + padding * 2,
-          4
-        );
+        ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+        ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
         ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-        // Text
-        ctx.fillStyle = "#fff";
-        ctx.fillText(label, labelX, labelY);
+        // Plus sign
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+      } else {
+        // X mark with circle for negative points
+        ctx.beginPath();
+        ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+        ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // X mark
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
       }
     }
-  }, [masks, points, scores]);
+  }, [mask, points, score]);
 
   // Load image when src changes
   useEffect(() => {
@@ -151,7 +225,7 @@ export function SegmentCanvas({
     img.src = imageSrc;
   }, [imageSrc, draw]);
 
-  // Redraw on masks/points change
+  // Redraw on mask/points change
   useEffect(() => {
     draw();
   }, [draw]);
@@ -161,16 +235,40 @@ export function SegmentCanvas({
     if (!canvas || !imageRef.current) return;
 
     const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const displayScaleX = canvas.width / rect.width;
+    const displayScaleY = canvas.height / rect.height;
+    const canvasX = (e.clientX - rect.left) * displayScaleX;
+    const canvasY = (e.clientY - rect.top) * displayScaleY;
 
     // Convert canvas coords to original image coords
     const scaleX = imageRef.current.naturalWidth / canvas.width;
     const scaleY = imageRef.current.naturalHeight / canvas.height;
 
     onImageClick({
-      x: Math.round(clickX * scaleX),
-      y: Math.round(clickY * scaleY),
+      x: Math.round(canvasX * scaleX),
+      y: Math.round(canvasY * scaleY),
+      label: 1, // Left-click = positive
+    });
+  };
+
+  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault(); // Prevent browser context menu
+    const canvas = canvasRef.current;
+    if (!canvas || !imageRef.current) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const displayScaleX = canvas.width / rect.width;
+    const displayScaleY = canvas.height / rect.height;
+    const canvasX = (e.clientX - rect.left) * displayScaleX;
+    const canvasY = (e.clientY - rect.top) * displayScaleY;
+
+    const scaleX = imageRef.current.naturalWidth / canvas.width;
+    const scaleY = imageRef.current.naturalHeight / canvas.height;
+
+    onImageClick({
+      x: Math.round(canvasX * scaleX),
+      y: Math.round(canvasY * scaleY),
+      label: 0, // Right-click = negative (exclude)
     });
   };
 
@@ -180,6 +278,7 @@ export function SegmentCanvas({
       width={width}
       height={height}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
       className="cursor-crosshair rounded-xl"
       style={{
         border: "1px solid var(--border-subtle)",

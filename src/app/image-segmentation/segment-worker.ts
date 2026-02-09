@@ -91,7 +91,7 @@ self.addEventListener("message", async (event: MessageEvent) => {
   if (type === "segment") {
     const { imageData, points } = event.data as {
       imageData: string;
-      points: Array<{ x: number; y: number }>;
+      points: Array<{ x: number; y: number; label?: 0 | 1 }>;
     };
 
     try {
@@ -106,7 +106,7 @@ self.addEventListener("message", async (event: MessageEvent) => {
         // input_points: [[[[x, y], ...]]]  (batch × objects × points × coords)
         // input_labels: [[[1, ...]]]        (batch × objects × labels)
         const sam3Points = points.map((p) => [p.x, p.y]);
-        const sam3Labels = points.map(() => 1);
+        const sam3Labels = points.map((p) => p.label ?? 1);
 
         const inputs = await processor(image, {
           input_points: [[sam3Points]],
@@ -152,31 +152,30 @@ self.addEventListener("message", async (event: MessageEvent) => {
           }
         }
 
-        // Pick the best mask by IoU score, or return all if no scores
+        // Return all masks sorted by IoU score (best first) so UI can let user pick
         if (scores.length > 0 && masks.length > 0) {
-          let bestIdx = 0;
-          for (let i = 1; i < scores.length && i < masks.length; i++) {
-            if (scores[i] > scores[bestIdx]) bestIdx = i;
-          }
+          // Create index array and sort by IoU descending
+          const indices = masks.map((_, i) => i);
+          indices.sort((a, b) => (scores[b] || 0) - (scores[a] || 0));
+          const sortedMasks = indices.map((i) => masks[i]);
+          const sortedScores = indices.map((i) => scores[i]);
           self.postMessage({
             type: "result",
             data: {
-              masks: [masks[bestIdx]],
-              scores: [scores[bestIdx]],
-              allMasks: masks,
-              allScores: scores,
+              masks: sortedMasks,
+              scores: sortedScores,
             },
           });
         } else {
           self.postMessage({
             type: "result",
-            data: { masks, scores: [], allMasks: masks, allScores: [] },
+            data: { masks, scores },
           });
         }
       } else {
         // SAM1 API: flat arrays
         const inputPoints = points.map((p) => [p.x, p.y]);
-        const inputLabels = points.map(() => 1);
+        const inputLabels = points.map((p) => p.label ?? 1);
 
         const inputs = await processor(image, {
           input_points: [inputPoints],
@@ -198,16 +197,36 @@ self.addEventListener("message", async (event: MessageEvent) => {
           const mask = batchMasks[i];
           const maskData = Array.from(mask.data as Float32Array);
           masks.push({
-            data: maskData,
+            data: maskData.map((v) => (v > 0 ? 1 : 0)), // Threshold logits to binary
             width: mask.dims[mask.dims.length - 1],
             height: mask.dims[mask.dims.length - 2],
           });
         }
 
-        self.postMessage({
-          type: "result",
-          data: { masks, scores: [], allMasks: masks, allScores: [] },
-        });
+        // Extract scores if available
+        let sam1Scores: number[] = [];
+        if (outputs.iou_scores) {
+          const scoreData = outputs.iou_scores.data as Float32Array;
+          sam1Scores = Array.from(scoreData);
+        }
+
+        // Sort by score descending (best first)
+        if (sam1Scores.length > 0 && masks.length > 0) {
+          const indices = masks.map((_, i) => i);
+          indices.sort((a, b) => (sam1Scores[b] || 0) - (sam1Scores[a] || 0));
+          self.postMessage({
+            type: "result",
+            data: {
+              masks: indices.map((i) => masks[i]),
+              scores: indices.map((i) => sam1Scores[i]),
+            },
+          });
+        } else {
+          self.postMessage({
+            type: "result",
+            data: { masks, scores: sam1Scores },
+          });
+        }
       }
     } catch (error) {
       self.postMessage({

@@ -7,6 +7,7 @@ import { useWebcam } from "@/hooks/useWebcam";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SegmentCanvas } from "@/components/segmentation/SegmentCanvas";
 import { SEGMENTATION_MODELS } from "@/lib/segmentation-constants";
+import type { ClickPoint } from "@/hooks/useSegmentation";
 import {
   Scissors,
   Upload,
@@ -18,6 +19,8 @@ import {
   Video,
   RotateCcw,
   ChevronDown,
+  MousePointer,
+  Ban,
 } from "lucide-react";
 
 type InputMode = "upload" | "camera";
@@ -29,13 +32,17 @@ export default function ImageSegmentationPage() {
   const webcam = useWebcam({ width: 640, height: 480 });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imageSize, setImageSize] = useState({ width: 640, height: 480 });
-  const [clickPoints, setClickPoints] = useState<Array<{ x: number; y: number }>>([]);
+  const [clickPoints, setClickPoints] = useState<ClickPoint[]>([]);
   const [inputMode, setInputMode] = useState<InputMode>("upload");
   const [isCaptured, setIsCaptured] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedModel =
     SEGMENTATION_MODELS.find((m) => m.id === seg.modelId) ?? SEGMENTATION_MODELS[0];
+
+  // Get the currently selected mask (single mask for canvas)
+  const activeMask = seg.masks.length > 0 ? seg.masks[seg.selectedMaskIndex] ?? null : null;
+  const activeScore = seg.scores.length > 0 ? seg.scores[seg.selectedMaskIndex] : undefined;
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newModelId = e.target.value;
@@ -87,7 +94,7 @@ export default function ImageSegmentationPage() {
   };
 
   const handleImageClick = useCallback(
-    (point: { x: number; y: number }) => {
+    (point: ClickPoint) => {
       if (!imageSrc || seg.isSegmenting) return;
       const newPoints = [...clickPoints, point];
       setClickPoints(newPoints);
@@ -110,7 +117,6 @@ export default function ImageSegmentationPage() {
   };
 
   const handleSwitchMode = (mode: InputMode) => {
-    // Cleanup previous state
     if (mode === "upload" && webcam.isActive) {
       webcam.stop();
     }
@@ -119,6 +125,9 @@ export default function ImageSegmentationPage() {
     setClickPoints([]);
     setIsCaptured(false);
   };
+
+  // Mask granularity labels for the selector
+  const maskLabels = ["Precise", "Balanced", "Broad"];
 
   return (
     <main className="min-h-screen">
@@ -323,11 +332,18 @@ export default function ImageSegmentationPage() {
             {/* Segmentation Canvas (after image is loaded from either source) */}
             {imageSrc && (
               <div>
+                {/* Instructions + actions */}
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs" style={{ color: "var(--muted)" }}>
-                    Click on the image to segment objects
-                    {seg.isSegmenting && " (processing...)"}
-                  </p>
+                  <div className="flex items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
+                    <span className="flex items-center gap-1">
+                      <MousePointer className="w-3 h-3" />
+                      Click to include
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Ban className="w-3 h-3" />
+                      Right-click to exclude
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
                     {clickPoints.length > 0 && (
                       <button
@@ -362,12 +378,12 @@ export default function ImageSegmentationPage() {
                 <div className="relative">
                   <SegmentCanvas
                     imageSrc={imageSrc}
-                    masks={seg.masks}
+                    mask={activeMask}
                     points={clickPoints}
                     onImageClick={handleImageClick}
                     width={imageSize.width}
                     height={imageSize.height}
-                    scores={seg.scores}
+                    score={activeScore}
                   />
                   {seg.isSegmenting && (
                     <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: "rgba(0,0,0,0.3)" }}>
@@ -375,6 +391,41 @@ export default function ImageSegmentationPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Mask granularity selector — only show when we have multiple masks */}
+                {seg.masks.length > 1 && (
+                  <div className="mt-3">
+                    <p className="text-xs mb-2 font-medium" style={{ color: "var(--muted)" }}>
+                      Mask granularity
+                    </p>
+                    <div className="flex gap-1.5">
+                      {seg.masks.map((_, i) => {
+                        const label = maskLabels[i] || `Mask ${i + 1}`;
+                        const score = seg.scores[i];
+                        const isActive = seg.selectedMaskIndex === i;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => seg.setSelectedMaskIndex(i)}
+                            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                            style={{
+                              background: isActive ? "var(--accent)" : "var(--surface)",
+                              color: isActive ? "#fff" : "var(--muted)",
+                              border: isActive ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
+                            }}
+                          >
+                            <span className="block">{label}</span>
+                            {score !== undefined && (
+                              <span className="block text-[10px] mt-0.5" style={{ opacity: 0.8 }}>
+                                {(score * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-3 mt-3">
                   {inputMode === "camera" && isCaptured ? (

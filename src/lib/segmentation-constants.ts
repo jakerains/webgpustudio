@@ -16,6 +16,13 @@ export const SEGMENTATION_MODELS: SegmentationModelOption[] = [
     dtype: "q4f16",
     modelClass: "sam3",
   },
+  {
+    id: "Xenova/slimsam-77-uniform",
+    label: "SlimSAM (Lightweight)",
+    size: "~107 MB",
+    description: "Pruned SAM — fast and lightweight, great for quick segmentation",
+    modelClass: "sam1",
+  },
 ];
 
 export const DEFAULT_SEGMENTATION_MODEL_ID = SEGMENTATION_MODELS[0].id;
