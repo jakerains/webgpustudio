@@ -20,34 +20,30 @@ No servers. No API keys. No data leaves your device.
 
 ## What is this?
 
-WebGPU Studio is an open-source collection of **12 AI-powered tools** that run completely client-side using [WebGPU](https://www.w3.org/TR/webgpu/) acceleration. Models are downloaded once from [Hugging Face Hub](https://huggingface.co/) and cached in your browser — after that, everything works offline.
+WebGPU Studio is an open-source collection of **8 AI-powered tools** that run completely client-side using [WebGPU](https://www.w3.org/TR/webgpu/) acceleration. Models are downloaded once from [Hugging Face Hub](https://huggingface.co/) and cached in your browser — after that, everything works offline.
 
-Built with [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) for ML inference and raw WebGPU compute shaders for GPU-native features.
+Built with [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) for ML inference, [`kokoro-js`](https://github.com/niconielsen32/kokoro-js) and [`onnxruntime-web`](https://onnxruntime.ai/) for TTS, and raw WebGPU compute shaders for GPU-native features.
 
 ## Features
 
 ### Speech & Audio
 | Feature | Description | Models | Size |
 |---------|-------------|--------|------|
-| **Speech to Text** | Real-time transcription from mic or audio files | OpenAI Whisper (5 variants) | 39-244 MB |
-| **Text to Speech** | Convert text to natural-sounding speech | SpeechT5 | ~150 MB |
-| **Music Generation** | Generate music from text prompts | Meta MusicGen | ~1.5 GB |
+| **Speech to Text** | Real-time transcription from mic or audio files | OpenAI Whisper (6 variants incl. Large V3 Turbo) | 39 MB - 1.5 GB |
+| **Text to Speech** | Convert text to natural-sounding speech | Kokoro, Kitten TTS, Supertonic, LFM2.5, OuteTTS | 24 MB - 1.5 GB |
 
 ### Vision & Image
 | Feature | Description | Models | Size |
 |---------|-------------|--------|------|
 | **Background Removal** | Instantly remove image backgrounds | RMBG | 44-200 MB |
-| **Object Detection** | Real-time detection with webcam or upload | YOLOS / DETR | 29-166 MB |
+| **Object Detection** | Real-time detection with webcam or upload | YOLOv10 / YOLOS / DETR / Grounding DINO | 8-166 MB |
 | **Depth Estimation** | Generate depth maps from 2D images | Depth Anything V2 | ~97 MB |
-| **Image Segmentation** | Click-to-segment with point prompts | Meta SAM3 / SAM1 | ~301 MB |
-| **Vision Chat** | Ask questions about images | SmolVLM | ~500 MB |
+| **Image Segmentation** | Click-to-segment with point prompts, multi-mask & negative points | Meta SAM3 / SlimSAM | ~301 MB |
 
 ### Text & Language
 | Feature | Description | Models | Size |
 |---------|-------------|--------|------|
-| **Chat** | Conversational AI with streaming & thinking | Qwen3 / SmolLM3 / LFM | 570 MB-2.1 GB |
-| **Translation** | Translate between 200 languages | Meta NLLB-200 | ~600 MB |
-| **Semantic Search** | Search documents by meaning | MiniLM | ~25 MB |
+| **Chat** | Conversational AI with streaming & thinking | Qwen3 / Llama 3.2 / LFM 2.5 / LFM2 / SmolLM3 (7 models) | 570 MB - 2.8 GB |
 
 ### GPU Compute
 | Feature | Description | Size |
@@ -69,10 +65,10 @@ git clone https://github.com/jakerains/webgpustudio.git
 cd webgpustudio
 
 # Install dependencies
-pnpm install
+npm install
 
 # Start dev server
-pnpm dev
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in Chrome.
@@ -83,7 +79,7 @@ Open [http://localhost:3000](http://localhost:3000) in Chrome.
 |-------|-----------|
 | Framework | [Next.js 16](https://nextjs.org/) (App Router) |
 | UI | [React 19](https://react.dev/) + [Tailwind CSS 4](https://tailwindcss.com/) |
-| ML Inference | [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) via Web Workers |
+| ML Inference | [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js), [`kokoro-js`](https://github.com/niconielsen32/kokoro-js), [`onnxruntime-web`](https://onnxruntime.ai/) via Web Workers |
 | GPU Compute | [WebGPU API](https://www.w3.org/TR/webgpu/) + [WGSL](https://www.w3.org/TR/WGSL/) shaders |
 | Typography | [DM Sans](https://fonts.google.com/specimen/DM+Sans), [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque), [Geist Pixel](https://vercel.com/font) |
 | Icons | [Lucide React](https://lucide.dev/) |
