@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.9.3";
+export const APP_VERSION = "0.9.4";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.4",
+    date: "2026-02-08",
+    title: "Kokoro & Supertonic TTS",
+    changes: [
+      { type: "added", text: "Kokoro TTS v1.0 — highest quality browser TTS with 30+ voices and natural prosody (82M params, ~92 MB)" },
+      { type: "added", text: "Supertonic TTS v2 — ultra-fast speech synthesis at 167x real-time speed (66M params, ~263 MB)" },
+      { type: "added", text: "Voice selector for Kokoro with 16 voices across American & British accents" },
+      { type: "added", text: "Male/Female speaker selection for Supertonic TTS" },
+      { type: "improved", text: "TTS worker refactored with engine-based routing for 4 model backends (Kokoro, Supertonic, LFM, OuteTTS)" },
+    ],
+  },
   {
     version: "0.9.3",
     date: "2026-02-08",

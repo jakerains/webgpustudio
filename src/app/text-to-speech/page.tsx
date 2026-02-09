@@ -17,11 +17,13 @@ import { VoiceSelector } from "@/components/tts/VoiceSelector";
 import { AudioPlayer } from "@/components/shared/AudioPlayer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWebGPUSupport } from "@/hooks/useWebGPUSupport";
-import { TTS_MODELS, OUTETTS_SPEAKERS } from "@/lib/tts-constants";
+import {
+  TTS_MODELS,
+  KOKORO_VOICES,
+  SUPERTONIC_SPEAKERS,
+  OUTETTS_SPEAKERS,
+} from "@/lib/tts-constants";
 import { float32ToWav } from "@/lib/canvas-utils";
-
-const LFM_AUDIO_MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-ONNX";
-const OUTETTS_MODEL_ID = "onnx-community/OuteTTS-0.2-500M";
 
 export default function TextToSpeechPage() {
   const { isSupported: isWebGPUSupported, isChecking: isCheckingWebGPU } =
@@ -32,8 +34,11 @@ export default function TextToSpeechPage() {
 
   const selectedModel =
     TTS_MODELS.find((m) => m.id === tts.modelId) ?? TTS_MODELS[0];
-  const isLfmSelected = selectedModel.id === LFM_AUDIO_MODEL_ID;
-  const isOuteTtsSelected = selectedModel.id === OUTETTS_MODEL_ID;
+  const isKokoroSelected = selectedModel.ttsEngine === "kokoro";
+  const isSupertonicSelected = selectedModel.ttsEngine === "supertonic";
+  const isLfmSelected = selectedModel.ttsEngine === "lfm";
+  const isOuteTtsSelected = selectedModel.ttsEngine === "outetts";
+  const hasSpeakerSelect = isKokoroSelected || isSupertonicSelected || isOuteTtsSelected;
 
   const audioUrl = useMemo(() => {
     if (!tts.audioResult) return null;
@@ -210,9 +215,17 @@ export default function TextToSpeechPage() {
                   modelLabel={selectedModel.label}
                   voiceProfile={selectedModel.voiceProfile}
                   supportsInterleaved={selectedModel.supportsInterleaved}
-                  speakers={isOuteTtsSelected ? OUTETTS_SPEAKERS : undefined}
-                  selectedSpeaker={isOuteTtsSelected ? tts.speakerId : undefined}
-                  onSpeakerChange={isOuteTtsSelected ? tts.setSpeakerId : undefined}
+                  speakers={
+                    isKokoroSelected
+                      ? KOKORO_VOICES
+                      : isSupertonicSelected
+                        ? SUPERTONIC_SPEAKERS
+                        : isOuteTtsSelected
+                          ? OUTETTS_SPEAKERS
+                          : undefined
+                  }
+                  selectedSpeaker={hasSpeakerSelect ? tts.speakerId : undefined}
+                  onSpeakerChange={hasSpeakerSelect ? tts.setSpeakerId : undefined}
                 />
               </div>
 

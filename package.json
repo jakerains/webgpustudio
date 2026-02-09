@@ -1,8 +1,9 @@
 {
-  "name": "webgpu-claude",
-  "version": "0.9.3",
+  "name": "webgpu-studio",
+  "version": "0.9.4",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/patch-outetts.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -12,10 +13,11 @@
     "@huggingface/transformers": "^3.8.1",
     "clsx": "^2.1.1",
     "geist": "^1.7.0",
+    "kokoro-js": "^1.2.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "onnxruntime-web": "^1.22.0-dev.20250409-89f8206ba4",
-    "outetts": "github:xenova/OuteTTS",
+    "outetts": "^0.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

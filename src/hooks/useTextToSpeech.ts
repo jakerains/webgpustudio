@@ -51,7 +51,7 @@ export function useTextToSpeech(): TextToSpeechState {
   const [audioResult, setAudioResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelIdState] = useState(DEFAULT_TTS_MODEL_ID);
-  const [speakerId, setSpeakerId] = useState("male_1");
+  const [speakerId, setSpeakerId] = useState("af_heart");
 
   // Initialize worker
   useEffect(() => {
