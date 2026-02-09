@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { Send, Square } from "lucide-react";
+import { Send, Square, Trash2 } from "lucide-react";
 
 interface ChatInputProps {
   input: string;
   onInputChange: (value: string) => void;
   onSubmit: () => void;
   onStop: () => void;
+  onClear?: () => void;
   isGenerating: boolean;
   disabled: boolean;
+  hasMessages?: boolean;
 }
 
 export function ChatInput({
@@ -17,8 +19,10 @@ export function ChatInput({
   onInputChange,
   onSubmit,
   onStop,
+  onClear,
   isGenerating,
   disabled,
+  hasMessages = false,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -54,6 +58,19 @@ export function ChatInput({
           border: "1px solid var(--border-subtle)",
         }}
       >
+        {hasMessages && !isGenerating && onClear && (
+          <button
+            onClick={onClear}
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:brightness-110 active:scale-95"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border-subtle)",
+            }}
+            title="Clear chat"
+          >
+            <Trash2 className="w-4 h-4" style={{ color: "var(--muted)" }} />
+          </button>
+        )}
         <textarea
           ref={textareaRef}
           value={input}

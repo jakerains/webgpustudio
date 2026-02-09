@@ -67,8 +67,10 @@ export default function ChatPage() {
             onInputChange={chat.setInput}
             onSubmit={chat.handleSubmit}
             onStop={chat.stop}
+            onClear={() => chat.setMessages([])}
             isGenerating={chat.isGenerating}
             disabled={!chat.isModelReady}
+            hasMessages={chat.messages.length > 0}
           />
         </div>
       )}
