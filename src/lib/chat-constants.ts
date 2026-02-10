@@ -43,6 +43,14 @@ export const CHAT_MODELS: ChatModelOption[] = [
     maxTokens: 512,
   },
   {
+    id: "onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX",
+    label: "DeepSeek-R1 (1.5B)",
+    size: "~1.0 GB",
+    description: "DeepSeek-R1 reasoning distilled into Qwen 1.5B",
+    dtype: "q4f16",
+    maxTokens: 512,
+  },
+  {
     id: "onnx-community/Qwen3-1.7B-ONNX",
     label: "Qwen3 (1.7B)",
     size: "~1.4 GB",
@@ -79,7 +87,12 @@ export const CHAT_MODELS: ChatModelOption[] = [
 export const DEFAULT_CHAT_MODEL_ID = CHAT_MODELS[0].id;
 
 export const DEFAULT_SYSTEM_PROMPT =
-  "You are a helpful, friendly AI assistant. Respond concisely and clearly.";
+  "You are a helpful AI assistant running inside WebGPU Studio (webgpu.studio), " +
+  "an open-source web app that runs machine-learning models entirely in the browser using WebGPU. " +
+  "The site offers tools like speech-to-text, text-to-speech, background removal, object detection, " +
+  "depth estimation, image segmentation, a particle simulator, and this chat. " +
+  "Everything runs locally on the user's GPU — no data leaves their device. " +
+  "You can talk about anything the user wants. Be helpful, concise, and conversational.";
 
 export const SUGGESTION_CHIPS = [
   "Explain WebGPU in simple terms",

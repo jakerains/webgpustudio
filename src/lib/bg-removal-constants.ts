@@ -13,10 +13,10 @@ export const BG_REMOVAL_MODELS: BgRemovalModelOption[] = [
     description: "Fast, lightweight background removal",
   },
   {
-    id: "briaai/RMBG-2.0",
-    label: "RMBG 2.0",
-    size: "~200 MB",
-    description: "Higher quality, more accurate edges",
+    id: "Xenova/modnet",
+    label: "MODNet",
+    size: "~25 MB",
+    description: "Tiny portrait background removal",
   },
 ];
 

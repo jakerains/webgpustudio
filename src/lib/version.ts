@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.9.5";
+export const APP_VERSION = "0.9.6";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.9.6",
+    date: "2026-02-10",
+    title: "DeepSeek-R1 Chat + Smarter System Prompt",
+    changes: [
+      { type: "added", text: "DeepSeek-R1 Distill Qwen 1.5B — reasoning model for chat via ONNX" },
+      { type: "improved", text: "Chat system prompt now describes WebGPU Studio context and capabilities" },
+      { type: "changed", text: "Background removal swapped RMBG 2.0 for MODNet (~25 MB, portrait-focused)" },
+    ],
+  },
   {
     version: "0.9.5",
     date: "2026-02-08",
