@@ -5,6 +5,7 @@ import {
   DEFAULT_SEGMENTATION_MODEL_ID,
   SEGMENTATION_MODELS,
 } from "@/lib/segmentation-constants";
+import { getCachedModelIds } from "@/lib/model-cache";
 
 interface ProgressItem {
   file: string;
@@ -41,6 +42,7 @@ interface SegmentationState {
   setModelId: (id: string) => void;
   loadModel: () => void;
   segment: (imageDataUrl: string, clickPoints: ClickPoint[]) => void;
+  cachedModelIds: Set<string>;
 }
 
 export function useSegmentation(): SegmentationState {
@@ -54,6 +56,17 @@ export function useSegmentation(): SegmentationState {
   const [selectedMaskIndex, setSelectedMaskIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelId] = useState(DEFAULT_SEGMENTATION_MODEL_ID);
+  const [cachedModelIds, setCachedModelIds] = useState<Set<string>>(new Set());
+
+  const refreshCacheStatus = useCallback(async () => {
+    const ids = SEGMENTATION_MODELS.map((m) => m.id);
+    const cached = await getCachedModelIds(ids);
+    setCachedModelIds(cached);
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStatus();
+  }, [refreshCacheStatus]);
 
   useEffect(() => {
     const worker = new Worker(
@@ -115,6 +128,7 @@ export function useSegmentation(): SegmentationState {
         case "ready":
           setIsModelLoading(false);
           setIsModelReady(true);
+          refreshCacheStatus();
           break;
         case "result": {
           const { masks: maskResults, scores: scoreResults } = message.data as {
@@ -185,5 +199,6 @@ export function useSegmentation(): SegmentationState {
     setModelId,
     loadModel,
     segment,
+    cachedModelIds,
   };
 }

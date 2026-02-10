@@ -13,6 +13,8 @@ import {
   Mountain,
   Speech,
   Shapes,
+  AudioLines,
+  Settings,
   Menu,
   X,
   ChevronDown,
@@ -42,6 +44,7 @@ const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { href: "/speech-to-text", label: "Speech to Text", icon: Waves },
       { href: "/text-to-speech", label: "Text to Speech", icon: Speech, status: "beta" },
+      { href: "/audio-intelligence", label: "Audio Intelligence", icon: AudioLines, status: "beta" },
     ],
   },
   {
@@ -233,6 +236,29 @@ export function Sidebar() {
               </div>
             );
           })}
+
+          {/* Settings link */}
+          <div
+            className="mt-2 pt-2"
+            style={{ borderTop: "1px solid var(--card-border)" }}
+          >
+            <Link
+              href="/settings"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all"
+              style={{
+                background: isActive("/settings") ? "var(--accent-bg)" : "transparent",
+                color: isActive("/settings") ? "var(--accent)" : "var(--muted)",
+                border: isActive("/settings")
+                  ? "1px solid var(--accent-border)"
+                  : "1px solid transparent",
+                fontWeight: isActive("/settings") ? 500 : 400,
+              }}
+            >
+              <Settings className="w-4 h-4 shrink-0" />
+              <span className="truncate flex-1">Settings</span>
+            </Link>
+          </div>
         </nav>
 
         {/* Footer */}

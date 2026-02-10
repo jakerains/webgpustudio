@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.9.6";
+export const APP_VERSION = "0.10.1";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,27 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.10.1",
+    date: "2026-02-10",
+    title: "Model Caching & Settings Page",
+    changes: [
+      { type: "added", text: "Settings page with model cache management — view cached models and clear storage" },
+      { type: "added", text: "Cache detection across all features — see which models are already downloaded" },
+      { type: "improved", text: "All 8 feature hooks now track cached model status for instant load indicators" },
+    ],
+  },
+  {
+    version: "0.10.0",
+    date: "2026-02-10",
+    title: "Audio Intelligence with Voxtral Mini 3B",
+    changes: [
+      { type: "added", text: "Audio Intelligence — transcribe, summarize, and ask questions about audio using Voxtral Mini 3B (~2 GB)" },
+      { type: "added", text: "Multimodal audio-text model with streaming responses and conversation history" },
+      { type: "added", text: "Audio input via file upload (WAV, MP3, OGG, FLAC, WebM) or microphone recording" },
+      { type: "added", text: "Quick-action suggestion chips: Transcribe (EN/ES), Describe, Summarize, Language Detection" },
+    ],
+  },
   {
     version: "0.9.6",
     date: "2026-02-10",

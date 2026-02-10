@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { DEFAULT_DEPTH_MODEL_ID } from "@/lib/depth-constants";
+import { DEFAULT_DEPTH_MODEL_ID, DEPTH_MODELS } from "@/lib/depth-constants";
+import { getCachedModelIds } from "@/lib/model-cache";
 
 interface ProgressItem {
   file: string;
@@ -29,6 +30,7 @@ interface DepthEstimationState {
   setModelId: (modelId: string) => void;
   loadModel: () => void;
   estimateDepth: (imageDataUrl: string) => void;
+  cachedModelIds: Set<string>;
 }
 
 export function useDepthEstimation(): DepthEstimationState {
@@ -40,6 +42,17 @@ export function useDepthEstimation(): DepthEstimationState {
   const [depthResult, setDepthResult] = useState<DepthResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelId] = useState(DEFAULT_DEPTH_MODEL_ID);
+  const [cachedModelIds, setCachedModelIds] = useState<Set<string>>(new Set());
+
+  const refreshCacheStatus = useCallback(async () => {
+    const ids = DEPTH_MODELS.map((m) => m.id);
+    const cached = await getCachedModelIds(ids);
+    setCachedModelIds(cached);
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStatus();
+  }, [refreshCacheStatus]);
 
   // Initialize worker
   useEffect(() => {
@@ -106,6 +119,7 @@ export function useDepthEstimation(): DepthEstimationState {
         case "ready":
           setIsModelLoading(false);
           setIsModelReady(true);
+          refreshCacheStatus();
           break;
         case "result":
           setDepthResult(message.data as DepthResult);
@@ -156,5 +170,6 @@ export function useDepthEstimation(): DepthEstimationState {
     setModelId,
     loadModel,
     estimateDepth,
+    cachedModelIds,
   };
 }

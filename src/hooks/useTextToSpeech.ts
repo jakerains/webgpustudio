@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { DEFAULT_TTS_MODEL_ID } from "@/lib/tts-constants";
+import { DEFAULT_TTS_MODEL_ID, TTS_MODELS } from "@/lib/tts-constants";
+import { getCachedModelIds } from "@/lib/model-cache";
 
 interface ProgressItem {
   file: string;
@@ -40,6 +41,7 @@ interface TextToSpeechState {
   setSpeakerId: (id: string) => void;
   loadModel: () => void;
   synthesize: (text: string) => void;
+  cachedModelIds: Set<string>;
 }
 
 export function useTextToSpeech(): TextToSpeechState {
@@ -52,6 +54,17 @@ export function useTextToSpeech(): TextToSpeechState {
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelIdState] = useState(DEFAULT_TTS_MODEL_ID);
   const [speakerId, setSpeakerId] = useState("af_sky");
+  const [cachedModelIds, setCachedModelIds] = useState<Set<string>>(new Set());
+
+  const refreshCacheStatus = useCallback(async () => {
+    const ids = TTS_MODELS.map((m) => m.id);
+    const cached = await getCachedModelIds(ids);
+    setCachedModelIds(cached);
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStatus();
+  }, [refreshCacheStatus]);
 
   // Initialize worker
   useEffect(() => {
@@ -114,6 +127,7 @@ export function useTextToSpeech(): TextToSpeechState {
         case "ready":
           setIsModelLoading(false);
           setIsModelReady(true);
+          refreshCacheStatus();
           break;
         case "result": {
           const { audio, samplingRate, wavBuffer } = message.data;
@@ -180,5 +194,6 @@ export function useTextToSpeech(): TextToSpeechState {
     setSpeakerId,
     loadModel,
     synthesize,
+    cachedModelIds,
   };
 }

@@ -36,3 +36,28 @@ export async function getCachedModelIds(
   await Promise.all(checks);
   return cached;
 }
+
+/**
+ * Deletes all Cache API caches used by @huggingface/transformers.
+ * The library creates caches named "transformers-cache" (or similar).
+ * We delete all caches to be thorough — the browser will recreate them on next download.
+ */
+export async function clearAllModelCache(): Promise<void> {
+  if (typeof caches === "undefined") return;
+  const keys = await caches.keys();
+  await Promise.all(keys.map((key) => caches.delete(key)));
+}
+
+/**
+ * Estimates total cache storage used by model files.
+ * Returns size in bytes.
+ */
+export async function estimateCacheSize(): Promise<number> {
+  if (typeof navigator === "undefined" || !navigator.storage?.estimate) return 0;
+  try {
+    const estimate = await navigator.storage.estimate();
+    return estimate.usage ?? 0;
+  } catch {
+    return 0;
+  }
+}

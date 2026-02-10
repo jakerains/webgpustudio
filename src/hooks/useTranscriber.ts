@@ -7,7 +7,8 @@ import type {
   WorkerOutgoingMessage,
   ModelLoadProgress,
 } from "@/types/transcriber";
-import { DEFAULT_MODEL_ID } from "@/lib/constants";
+import { DEFAULT_MODEL_ID, WHISPER_MODELS } from "@/lib/constants";
+import { getCachedModelIds } from "@/lib/model-cache";
 
 interface TranscriberState {
   isModelLoading: boolean;
@@ -22,6 +23,7 @@ interface TranscriberState {
   setModelId: (modelId: string) => void;
   loadModel: () => void;
   transcribe: (audio: Float32Array) => void;
+  cachedModelIds: Set<string>;
 }
 
 export function useTranscriber(): TranscriberState {
@@ -36,6 +38,17 @@ export function useTranscriber(): TranscriberState {
   const [error, setError] = useState<string | null>(null);
   const [device, setDevice] = useState<"webgpu" | "wasm">("webgpu");
   const [modelId, setModelId] = useState(DEFAULT_MODEL_ID);
+  const [cachedModelIds, setCachedModelIds] = useState<Set<string>>(new Set());
+
+  const refreshCacheStatus = useCallback(async () => {
+    const ids = WHISPER_MODELS.map((m) => m.id);
+    const cached = await getCachedModelIds(ids);
+    setCachedModelIds(cached);
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStatus();
+  }, [refreshCacheStatus]);
 
   // Initialize worker
   useEffect(() => {
@@ -97,6 +110,7 @@ export function useTranscriber(): TranscriberState {
         case "ready":
           setIsModelLoading(false);
           setIsModelReady(true);
+          refreshCacheStatus();
           break;
         case "update":
           setTranscript(message.data);
@@ -150,5 +164,6 @@ export function useTranscriber(): TranscriberState {
     setModelId,
     loadModel,
     transcribe,
+    cachedModelIds,
   };
 }

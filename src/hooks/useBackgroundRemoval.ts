@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { DEFAULT_BG_REMOVAL_MODEL_ID } from "@/lib/bg-removal-constants";
+import { DEFAULT_BG_REMOVAL_MODEL_ID, BG_REMOVAL_MODELS } from "@/lib/bg-removal-constants";
+import { getCachedModelIds } from "@/lib/model-cache";
 
 interface ProgressItem {
   file: string;
@@ -39,6 +40,7 @@ interface BgRemovalState {
   loadModel: () => void;
   processImage: (imageDataUrl: string) => void;
   reset: () => void;
+  cachedModelIds: Set<string>;
 }
 
 export function useBackgroundRemoval(): BgRemovalState {
@@ -50,6 +52,17 @@ export function useBackgroundRemoval(): BgRemovalState {
   const [result, setResult] = useState<BgRemovalResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelId] = useState(DEFAULT_BG_REMOVAL_MODEL_ID);
+  const [cachedModelIds, setCachedModelIds] = useState<Set<string>>(new Set());
+
+  const refreshCacheStatus = useCallback(async () => {
+    const ids = BG_REMOVAL_MODELS.map((m) => m.id);
+    const cached = await getCachedModelIds(ids);
+    setCachedModelIds(cached);
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStatus();
+  }, [refreshCacheStatus]);
 
   // Initialize worker
   useEffect(() => {
@@ -112,6 +125,7 @@ export function useBackgroundRemoval(): BgRemovalState {
         case "ready":
           setIsModelLoading(false);
           setIsModelReady(true);
+          refreshCacheStatus();
           break;
         case "result":
           setResult(message.data);
@@ -167,5 +181,6 @@ export function useBackgroundRemoval(): BgRemovalState {
     loadModel,
     processImage,
     reset,
+    cachedModelIds,
   };
 }

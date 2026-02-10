@@ -5,6 +5,7 @@ import {
   DEFAULT_DETECTION_MODEL_ID,
   DETECTION_MODELS,
 } from "@/lib/detection-constants";
+import { getCachedModelIds } from "@/lib/model-cache";
 
 export interface DetectionBox {
   label: string;
@@ -36,6 +37,7 @@ interface UseObjectDetectionState {
     threshold?: number,
     candidateLabels?: string
   ) => void;
+  cachedModelIds: Set<string>;
 }
 
 export function useObjectDetection(): UseObjectDetectionState {
@@ -47,6 +49,17 @@ export function useObjectDetection(): UseObjectDetectionState {
   const [detections, setDetections] = useState<DetectionBox[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [modelId, setModelId] = useState(DEFAULT_DETECTION_MODEL_ID);
+  const [cachedModelIds, setCachedModelIds] = useState<Set<string>>(new Set());
+
+  const refreshCacheStatus = useCallback(async () => {
+    const ids = DETECTION_MODELS.map((m) => m.id);
+    const cached = await getCachedModelIds(ids);
+    setCachedModelIds(cached);
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStatus();
+  }, [refreshCacheStatus]);
 
   // Initialize worker
   useEffect(() => {
@@ -109,6 +122,7 @@ export function useObjectDetection(): UseObjectDetectionState {
         case "ready":
           setIsModelLoading(false);
           setIsModelReady(true);
+          refreshCacheStatus();
           break;
         case "result":
           setDetections(message.data.boxes);
@@ -173,5 +187,6 @@ export function useObjectDetection(): UseObjectDetectionState {
     setModelId,
     loadModel,
     detect,
+    cachedModelIds,
   };
 }
