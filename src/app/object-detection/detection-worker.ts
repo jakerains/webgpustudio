@@ -143,7 +143,7 @@ async function detectYolov10(
 
     if (score < threshold) continue;
 
-    // Scale from resized coords back to original image coords, then to percentages
+    // Scale from resized coords back to original image coords, then to 0-1 fractions
     const scaleX = origW / resizedW;
     const scaleY = origH / resizedH;
 
@@ -151,10 +151,10 @@ async function detectYolov10(
       label: COCO_LABELS[classId] ?? `class_${classId}`,
       score,
       box: {
-        xmin: ((x1 * scaleX) / origW) * 100,
-        ymin: ((y1 * scaleY) / origH) * 100,
-        xmax: ((x2 * scaleX) / origW) * 100,
-        ymax: ((y2 * scaleY) / origH) * 100,
+        xmin: (x1 * scaleX) / origW,
+        ymin: (y1 * scaleY) / origH,
+        xmax: (x2 * scaleX) / origW,
+        ymax: (y2 * scaleY) / origH,
       },
     });
   }
@@ -212,21 +212,24 @@ async function detectGroundingDino(
       score: item.score,
       box: isAbsolute
         ? {
-            xmin: (b.xmin / image.width) * 100,
-            ymin: (b.ymin / image.height) * 100,
-            xmax: (b.xmax / image.width) * 100,
-            ymax: (b.ymax / image.height) * 100,
+            xmin: b.xmin / image.width,
+            ymin: b.ymin / image.height,
+            xmax: b.xmax / image.width,
+            ymax: b.ymax / image.height,
           }
         : {
-            xmin: b.xmin * 100,
-            ymin: b.ymin * 100,
-            xmax: b.xmax * 100,
-            ymax: b.ymax * 100,
+            xmin: b.xmin,
+            ymin: b.ymin,
+            xmax: b.xmax,
+            ymax: b.ymax,
           },
     };
   });
 
-  return boxes;
+  // Filter to only labels the user actually requested (the pipeline may
+  // return stale labels from a cached text encoding).
+  const allowedLabels = new Set(labels);
+  return boxes.filter((b) => allowedLabels.has(b.label.toLowerCase()));
 }
 
 /**

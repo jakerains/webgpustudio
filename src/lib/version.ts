@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.11.0";
+export const APP_VERSION = "0.11.1";
 
 export interface ChangelogEntry {
   version: string;
@@ -11,6 +11,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "0.11.1",
+    date: "2026-02-12",
+    title: "Object Detection Bounding Box Fix",
+    changes: [
+      { type: "fixed", text: "Bounding boxes now render correctly for Grounding DINO and YOLOv10 — coordinate scale mismatch (0-100 vs 0-1) resolved" },
+      { type: "improved", text: "Detection overlays completely redesigned — minimal corner brackets, dark translucent label pills with colored dots, HiDPI-aware canvas" },
+      { type: "added", text: "Smooth object tracking with IoU-based matching, position interpolation, and fade in/out — no more flashing boxes" },
+      { type: "changed", text: "Removed search labels input from object detection — Grounding DINO defaults to person/car/dog" },
+    ],
+  },
   {
     version: "0.11.0",
     date: "2026-02-11",

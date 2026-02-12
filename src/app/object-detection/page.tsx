@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Settings,
   Image as ImageIcon,
-  Search,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useObjectDetection } from "@/hooks/useObjectDetection";
@@ -33,12 +32,9 @@ export default function ObjectDetectionPage() {
     DETECTION_MODELS.find((m) => m.id === detection.modelId) ??
     DETECTION_MODELS[0];
 
-  const isZeroShot = selectedModel.pipelineType === "zero-shot-object-detection";
-
   // UI state
   const [inputMode, setInputMode] = useState<InputMode>("image");
   const [threshold, setThreshold] = useState(0.5);
-  const [searchQuery, setSearchQuery] = useState("person, car, dog");
   const [isDragging, setIsDragging] = useState(false);
 
   // Image state
@@ -67,6 +63,12 @@ export default function ObjectDetectionPage() {
   // Displayed dimensions (the rendered size of the image/video)
   const [displayWidth, setDisplayWidth] = useState(0);
   const [displayHeight, setDisplayHeight] = useState(0);
+
+  // Refs for values the RAF loop reads (avoids stale closures + effect thrashing)
+  const thresholdRef = useRef(threshold);
+  const detectFnRef = useRef(detection.detect);
+  thresholdRef.current = threshold;
+  detectFnRef.current = detection.detect;
 
   // Handle image file selection
   const handleImageFile = useCallback(
@@ -102,9 +104,9 @@ export default function ObjectDetectionPage() {
     if (ctx) {
       ctx.drawImage(img, 0, 0);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-      detection.detect(dataUrl, threshold, isZeroShot ? searchQuery : undefined);
+      detection.detect(dataUrl, threshold);
     }
-  }, [detection, threshold, isZeroShot, searchQuery]);
+  }, [detection, threshold]);
 
   // Drag and drop handlers
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -139,11 +141,11 @@ export default function ObjectDetectionPage() {
         if (ctx) {
           ctx.drawImage(img, 0, 0);
           const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-          detection.detect(dataUrl, newThreshold, isZeroShot ? searchQuery : undefined);
+          detection.detect(dataUrl, newThreshold);
         }
       }
     },
-    [inputMode, detection, isZeroShot, searchQuery]
+    [inputMode, detection]
   );
 
   // Webcam start/stop
@@ -178,7 +180,8 @@ export default function ObjectDetectionPage() {
     isDetectingRef.current = false;
   }, []);
 
-  // Webcam detection loop
+  // Webcam detection loop — reads threshold/detect from refs
+  // so the RAF loop doesn't restart on every keystroke or render.
   useEffect(() => {
     if (!isWebcamActive || !detection.isModelReady || inputMode !== "webcam")
       return;
@@ -211,7 +214,10 @@ export default function ObjectDetectionPage() {
         ctx.drawImage(video, 0, 0);
         const dataUrl = offscreen.toDataURL("image/jpeg", 0.7);
         lastTimeRef.current = performance.now();
-        detection.detect(dataUrl, threshold, isZeroShot ? searchQuery : undefined);
+        detectFnRef.current(
+          dataUrl,
+          thresholdRef.current,
+        );
       }
 
       rafRef.current = requestAnimationFrame(detectFrame);
@@ -225,7 +231,7 @@ export default function ObjectDetectionPage() {
         rafRef.current = null;
       }
     };
-  }, [isWebcamActive, detection.isModelReady, inputMode, threshold, detection, isZeroShot, searchQuery]);
+  }, [isWebcamActive, detection.isModelReady, inputMode]);
 
   // When detections arrive in webcam mode, compute FPS and allow next frame
   useEffect(() => {
@@ -578,42 +584,6 @@ export default function ObjectDetectionPage() {
                 onChange={handleThresholdChange}
               />
             </div>
-
-            {/* Grounding DINO search labels */}
-            {isZeroShot && (
-              <div className="mb-5">
-                <label
-                  className="text-xs font-medium mb-2 block"
-                  style={{ color: "var(--muted)" }}
-                >
-                  Search Labels
-                </label>
-                <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: "var(--muted-light)" }}
-                  />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="person, car, dog"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm transition-all focus:outline-none"
-                    style={{
-                      background: "var(--surface)",
-                      color: "var(--foreground)",
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                  />
-                </div>
-                <p
-                  className="text-xs mt-1.5"
-                  style={{ color: "var(--muted-light)" }}
-                >
-                  Comma-separated labels — type anything you want to detect
-                </p>
-              </div>
-            )}
 
             {/* Image Mode */}
             {inputMode === "image" && (
